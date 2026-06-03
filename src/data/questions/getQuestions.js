@@ -13,7 +13,7 @@
 //   const drill = getRandomDrill({ category: 'Tenses', count: 20, difficulty: 'C1' })
 // ─────────────────────────────────────────────────────────────────────────────
 
-import grammarQuestions from '../grammarQuestions.js'
+import { grammarQuestions } from '../grammarQuestions.js'
 import { questionsFromBatches } from './batches/index.js'
 
 // ── Master combined question store ─────────────────────────────────────────────
