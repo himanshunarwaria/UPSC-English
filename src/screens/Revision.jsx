@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
-import grammarQuestions from '../data/grammarQuestions'
+import { grammarQuestions } from '../data/grammarQuestions'
 import pyqQuestions from '../data/pyqQuestions'
 import Icon from '../components/ui/Icon'
 

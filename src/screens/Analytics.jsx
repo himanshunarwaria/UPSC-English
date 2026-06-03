@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
 import { GRAMMAR_CATEGORIES } from '../data/categories'
-import grammarQuestions from '../data/grammarQuestions'
+import { grammarQuestions } from '../data/grammarQuestions'
 import pyqQuestions from '../data/pyqQuestions'
 import Icon from '../components/ui/Icon'
 

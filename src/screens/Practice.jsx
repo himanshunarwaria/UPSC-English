@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
-import grammarQuestions from '../data/grammarQuestions'
+import { grammarQuestions } from '../data/grammarQuestions'
 import pyqQuestions from '../data/pyqQuestions'
 import { queryPYQs } from '../data/pyqs/index.js'
 import Badge from '../components/ui/Badge'
