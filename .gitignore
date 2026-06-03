@@ -1,0 +1,32 @@
+# Build output
+dist/
+
+# Dependencies
+node_modules/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Vite cache
+.vite/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Stitch reference screens (raw design exports — large folder, not needed in repo)
+# These are the original Stitch HTML/PNG exports used as visual references during development.
+# They are preserved locally in stitch-reference/raw-screens/ but excluded from git
+# to keep the repository lightweight. Remove the next line if you want to commit them.
+stitch-reference/

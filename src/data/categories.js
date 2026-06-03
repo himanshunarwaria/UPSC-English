@@ -1,0 +1,152 @@
+export const GRAMMAR_CATEGORIES = [
+  {
+    id: 'error-spotting',
+    label: 'Error Spotting',
+    icon: 'search',
+    description: 'Identify grammatical errors in sentences',
+    upscWeight: 'Very High',
+  },
+  {
+    id: 'sentence-correction',
+    label: 'Sentence Correction',
+    icon: 'edit',
+    description: 'Choose the grammatically correct version',
+    upscWeight: 'Very High',
+  },
+  {
+    id: 'subject-verb-agreement',
+    label: 'Subject-Verb Agreement',
+    icon: 'rule',
+    description: 'Match verbs correctly to their subjects',
+    upscWeight: 'High',
+  },
+  {
+    id: 'tenses',
+    label: 'Tenses',
+    icon: 'schedule',
+    description: 'Correct use of all 12 tense forms',
+    upscWeight: 'High',
+  },
+  {
+    id: 'articles',
+    label: 'Articles',
+    icon: 'article',
+    description: 'a, an, the — definite and indefinite',
+    upscWeight: 'High',
+  },
+  {
+    id: 'prepositions',
+    label: 'Prepositions',
+    icon: 'arrow_forward',
+    description: 'Correct preposition collocations',
+    upscWeight: 'High',
+  },
+  {
+    id: 'active-passive',
+    label: 'Active & Passive Voice',
+    icon: 'swap_horiz',
+    description: 'Voice transformation across all tenses',
+    upscWeight: 'High',
+  },
+  {
+    id: 'direct-indirect',
+    label: 'Direct & Indirect Speech',
+    icon: 'chat',
+    description: 'Reported speech rules and conversions',
+    upscWeight: 'High',
+  },
+  {
+    id: 'modifiers',
+    label: 'Modifiers',
+    icon: 'tune',
+    description: 'Dangling and misplaced modifiers',
+    upscWeight: 'Medium',
+  },
+  {
+    id: 'parallelism',
+    label: 'Parallelism',
+    icon: 'format_list_bulleted',
+    description: 'Parallel grammatical structures',
+    upscWeight: 'Medium',
+  },
+  {
+    id: 'conditionals',
+    label: 'Conditionals',
+    icon: 'device_hub',
+    description: 'All four conditional types',
+    upscWeight: 'Medium',
+  },
+  {
+    id: 'vocabulary',
+    label: 'Vocabulary Usage',
+    icon: 'school',
+    description: 'Words in context and precise usage',
+    upscWeight: 'Medium',
+  },
+  {
+    id: 'idioms',
+    label: 'Idioms & Phrases',
+    icon: 'auto_stories',
+    description: 'Common idioms and fixed expressions',
+    upscWeight: 'Medium',
+  },
+]
+
+export const DRILL_MODES = [
+  {
+    id: 'quick',
+    label: 'Quick Drill',
+    count: 10,
+    timed: false,
+    icon: 'bolt',
+    description: '10 questions, no timer',
+  },
+  {
+    id: 'timed',
+    label: 'Timed Drill',
+    count: 20,
+    timed: true,
+    timePerQuestion: 60,
+    icon: 'timer',
+    description: '20 questions, 60 sec each',
+  },
+  {
+    id: 'weakness',
+    label: 'Weakness Drill',
+    count: 15,
+    timed: false,
+    icon: 'trending_up',
+    description: 'Focus on your weak areas',
+  },
+  {
+    id: 'pyq',
+    label: 'PYQ Grammar',
+    count: 10,
+    timed: false,
+    icon: 'history_edu',
+    description: 'UPSC-style past questions',
+  },
+  {
+    id: 'revision',
+    label: 'Revision Drill',
+    count: 10,
+    timed: false,
+    icon: 'replay',
+    description: 'Retry your wrong answers',
+  },
+]
+
+export const PYQ_SECTIONS = [
+  { id: 'all', label: 'All' },
+  { id: 'grammar', label: 'Grammar' },
+  { id: 'comprehension', label: 'Comprehension' },
+  { id: 'precis', label: 'Précis' },
+  { id: 'essay', label: 'Essay' },
+  { id: 'translation', label: 'Translation' },
+]
+
+export const DIFFICULTY_LABELS = {
+  easy: { label: 'Easy', color: 'text-success' },
+  medium: { label: 'Medium', color: 'text-warn' },
+  hard: { label: 'Hard', color: 'text-error' },
+}
