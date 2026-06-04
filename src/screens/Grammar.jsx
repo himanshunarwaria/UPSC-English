@@ -2,8 +2,14 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GRAMMAR_CATEGORIES } from '../data/categories'
 import { useProgressContext } from '../hooks/useProgressContext'
-import { getQuestionsByTopic } from '../data/questions/getQuestions'
+import { getQuestionsByTopic, getAllQuestions } from '../data/questions/getQuestions'
+import { grammarQuestions } from '../data/grammarQuestions'
 import Icon from '../components/ui/Icon'
+
+// Map question IDs to their topics for revision queue aggregation
+const Q_TOPIC_MAP = Object.fromEntries(
+  getAllQuestions().map(q => [q.id || q.topic, q.topic])
+)
 
 // Pre-computed at module level — stable across renders
 const TOPIC_TOTALS = GRAMMAR_CATEGORIES.reduce((acc, cat) => {

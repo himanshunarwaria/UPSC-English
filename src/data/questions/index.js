@@ -18,16 +18,15 @@
 //   const allGrammarQuestions = [...grammarQuestions, ...grammarBankQuestions]
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Approved batch imports ────────────────────────────────────────────────────
-// Add imports here as each batch is reviewed and approved.
-// Format: import batchXXX from './batches/{code}_b{num}.js'
+// ── Approved batch imports ────────────────────────────────────────────────
+// Import all active batches via the batch index.
+// The batch index loads all batches (approved + draft under review).
 
-import batch_001_p5 from './batches/batch_001_part_05_error_spotting.js'
-// [ batch_001 ALL PARTS AUDITED ✓ (100Q total, 5×20) | Ready for validation merge ]
+import { questionsFromBatches } from './batches/index.js'
 
-export const grammarBankQuestions = [...batch_001_p5]
+export const grammarBankQuestions = questionsFromBatches
 
-// ── Bank statistics ───────────────────────────────────────────────────────────
+// ── Bank statistics ───────────────────────────────────────────────────────
 
 export const grammarBankStats = {
   totalQuestions:    grammarBankQuestions.length,

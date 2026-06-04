@@ -22,6 +22,27 @@ import batch_002_p3 from './batch_002_part_03_error_spotting.js'
 import batch_002_p4 from './batch_002_part_04_error_spotting.js'
 import batch_002_p5 from './batch_002_part_05_error_spotting.js'
 
+// Approved batches — batch_003 parts 1–5 (100Q total, audited ✓)
+import batch_003_p1 from './batch_003_sentence_correction_part_01.js'
+import batch_003_p2 from './batch_003_sentence_correction_part_02.js'
+import batch_003_p3 from './batch_003_sentence_correction_part_03.js'
+import batch_003_p4 from './batch_003_sentence_correction_part_04.js'
+import batch_003_p5 from './batch_003_sentence_correction_part_05.js'
+
+// Approved batches — batch_004 parts 1–5 (100Q complete, audited ✓)
+import batch_004_p1 from './batch_004_sentence_correction_part_01.js'
+import batch_004_p2 from './batch_004_sentence_correction_part_02.js'
+import batch_004_p3 from './batch_004_sentence_correction_part_03.js'
+import batch_004_p4 from './batch_004_sentence_correction_part_04.js'
+import batch_004_p5 from './batch_004_sentence_correction_part_05.js'
+
+// Approved batches — batch_005 parts 1–5 (100Q complete, awaiting audit)
+import batch_005_p1 from './batch_005_subject_verb_agreement_part_01.js'
+import batch_005_p2 from './batch_005_subject_verb_agreement_part_02.js'
+import batch_005_p3 from './batch_005_subject_verb_agreement_part_03.js'
+import batch_005_p4 from './batch_005_subject_verb_agreement_part_04.js'
+import batch_005_p5 from './batch_005_subject_verb_agreement_part_05.js'
+
 // ── Combine all approved batches ──────────────────────────────────────────────
 
 const allBatches = [
@@ -35,6 +56,21 @@ const allBatches = [
   ...batch_002_p3,
   ...batch_002_p4,
   ...batch_002_p5,
+  ...batch_003_p1,
+  ...batch_003_p2,
+  ...batch_003_p3,
+  ...batch_003_p4,
+  ...batch_003_p5,
+  ...batch_004_p1,
+  ...batch_004_p2,
+  ...batch_004_p3,
+  ...batch_004_p4,
+  ...batch_004_p5,
+  ...batch_005_p1,
+  ...batch_005_p2,
+  ...batch_005_p3,
+  ...batch_005_p4,
+  ...batch_005_p5,
 ]
 
 export const questionsFromBatches = allBatches
