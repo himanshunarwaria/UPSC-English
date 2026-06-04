@@ -13,15 +13,13 @@
 //   const drill = getRandomDrill({ category: 'Tenses', count: 20, difficulty: 'C1' })
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { grammarQuestions } from '../grammarQuestions.js'
 import { questionsFromBatches } from './batches/index.js'
 
 // ── Master combined question store ─────────────────────────────────────────────
+// Primary source is now the batches system (batch_001-batch_005).
+// Legacy grammarQuestions.js is optional for backward compatibility.
 
-const MASTER_QUESTIONS = [
-  ...grammarQuestions,
-  ...questionsFromBatches,
-]
+const MASTER_QUESTIONS = [...questionsFromBatches]
 
 // Map questions by ID for fast lookups
 const QUESTION_MAP = Object.fromEntries(

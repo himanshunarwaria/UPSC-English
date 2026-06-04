@@ -2,18 +2,19 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
 import { GRAMMAR_CATEGORIES } from '../data/categories'
-import { grammarQuestions } from '../data/grammarQuestions'
+import { getAllQuestions } from '../data/questions/getQuestions'
 import pyqQuestions from '../data/pyqQuestions'
 import Icon from '../components/ui/Icon'
 
 // ── Static lookup ─────────────────────────────────────────────────────────────
 
+const allGrammarQuestions = getAllQuestions()
 const qMap = Object.fromEntries(
-  [...grammarQuestions, ...pyqQuestions].map(q => [q.id, q])
+  [...allGrammarQuestions, ...pyqQuestions].map(q => [q.id, q])
 )
 
 const TOPIC_TOTALS = GRAMMAR_CATEGORIES.reduce((acc, cat) => {
-  acc[cat.label] = grammarQuestions.filter(q => q.topic === cat.label).length
+  acc[cat.label] = allGrammarQuestions.filter(q => q.topic === cat.label).length
   return acc
 }, {})
 

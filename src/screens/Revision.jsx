@@ -1,14 +1,14 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
-import { grammarQuestions } from '../data/grammarQuestions'
+import { getAllQuestions } from '../data/questions/getQuestions'
 import pyqQuestions from '../data/pyqQuestions'
 import Icon from '../components/ui/Icon'
 
 // ── Static question map ───────────────────────────────────────────────────────
 
 const qMap = Object.fromEntries(
-  [...grammarQuestions, ...pyqQuestions].map(q => [q.id, q])
+  [...getAllQuestions(), ...pyqQuestions].map(q => [q.id, q])
 )
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

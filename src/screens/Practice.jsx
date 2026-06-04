@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
-import { grammarQuestions } from '../data/grammarQuestions'
+import { getAllQuestions } from '../data/questions/getQuestions'
 import pyqQuestions from '../data/pyqQuestions'
 import { queryPYQs } from '../data/pyqs/index.js'
 import Badge from '../components/ui/Badge'
@@ -25,7 +25,7 @@ function shuffle(arr) {
 }
 
 function selectQuestions({ mode, topic, params, revisionQueue, attempted, bookmarks, count }) {
-  const allQ = [...grammarQuestions, ...pyqQuestions]
+  const allQ = [...getAllQuestions(), ...pyqQuestions]
 
   if (mode === 'pyq') {
     const id = params.get('id')
@@ -66,7 +66,7 @@ function selectQuestions({ mode, topic, params, revisionQueue, attempted, bookma
     if (topic !== 'all') pool = allQ.filter(q => q.topic === topic)
     else pool = weakTopics.length > 0 ? allQ.filter(q => weakTopics.includes(q.topic)) : allQ
   } else {
-    pool = topic === 'all' ? grammarQuestions : allQ.filter(q => q.topic === topic || q.section === topic)
+    pool = topic === 'all' ? getAllQuestions() : allQ.filter(q => q.topic === topic || q.section === topic)
   }
 
   const unattempted = pool.filter(q => !attempted[q.id])
