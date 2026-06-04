@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { GRAMMAR_CATEGORIES } from '../data/categories'
 import { useProgressContext } from '../hooks/useProgressContext'
 import { getQuestionsByTopic, getAllQuestions } from '../data/questions/getQuestions'
-import { grammarQuestions } from '../data/grammarQuestions'
 import Icon from '../components/ui/Icon'
+
+// Get all questions once at module level for stable reference across renders
+const ALL_GRAMMAR_QUESTIONS = getAllQuestions()
 
 // Map question IDs to their topics for revision queue aggregation
 const Q_TOPIC_MAP = Object.fromEntries(
-  getAllQuestions().map(q => [q.id || q.topic, q.topic])
+  ALL_GRAMMAR_QUESTIONS.map(q => [q.id || q.topic, q.topic])
 )
 
 // Pre-computed at module level — stable across renders
@@ -173,7 +175,7 @@ export default function Grammar() {
         {/* Screen header */}
         <div className="pt-5 pb-4">
           <p className="text-2xs font-medium text-on-dim uppercase tracking-widest mb-1">
-            {grammarQuestions.length} questions · {startedCount}/{GRAMMAR_CATEGORIES.length} topics started
+            {ALL_GRAMMAR_QUESTIONS.length} questions · {startedCount}/{GRAMMAR_CATEGORIES.length} topics started
             {weakCount > 0 && <span className="text-error"> · {weakCount} weak</span>}
           </p>
           <h1 className="font-display font-bold text-2xl text-on">Grammar Library</h1>
