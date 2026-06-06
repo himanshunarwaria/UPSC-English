@@ -5,8 +5,14 @@ const ROUTE_META = {
   '/':          { title: "Today's Practice" },
   '/grammar':   { title: 'Grammar Drill' },
   '/practice':  { title: 'Active Practice' },
+  '/level-test': { title: 'Level Test' },
   '/pyqs':      { title: 'UPSC PYQs' },
   '/revision':  { title: 'Revision Queue' },
+  '/mistakes':  { title: 'Mistake Review' },
+  '/vocabulary': { title: 'Vocabulary Bank' },
+  '/connectors': { title: 'Connector Practice' },
+  '/progress': { title: 'Progress Report' },
+  '/sentence-builder': { title: 'Sentence Builder' },
   '/analytics': { title: 'Weakness Analytics' },
 }
 

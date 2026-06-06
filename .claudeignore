@@ -1,25 +1,55 @@
+# Build and dependency directories
 node_modules/
 dist/
 build/
+.cache/
 .next/
 out/
 coverage/
-.git/
-.cache/
 .vite/
-*.zip
-*.rar
-*.7z
+
+# Version control
+.git/
+
+# Screenshots and images
+screenshots/
+screenshot/
 *.png
 *.jpg
 *.jpeg
 *.webp
-*.mp4
-*.mov
-*.pdf
-backup/
-backups/
-exports/
-screenshots/
+*.gif
+
+# Stitch exports and designs
+Stitch/
+stitch/
 stitch-export/
 stitch-reference/
+assets/stitch/
+
+# Old, backup, and unused files
+old/
+backup/
+backups/
+archive/
+archives/
+unused/
+mockups/
+exports/
+*.bak
+*.tmp
+
+# Compressed files
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# Media files
+*.mp4
+*.mov
+
+# Documents
+*.pdf
+*.html

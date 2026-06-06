@@ -29,19 +29,55 @@ export const ALLOWED_CATEGORIES = new Set([
 ])
 
 export const ALLOWED_TYPES = new Set([
-  'mcq-correction',     // 4-option MCQ where one option is the correction
-  'error-spotting',     // A/B/C/D underlined parts — find the error
-  'fill-blank',         // Choose the best word/phrase for the blank
-  'best-sentence',      // Choose the grammatically best sentence from 4
-  'voice-conversion',   // Active ↔ Passive transformation
-  'speech-conversion',  // Direct ↔ Indirect speech transformation
-  'formal-usage',       // Choose the most formal/appropriate option
-  'mixed-rule',         // Tests interaction of 2+ grammar rules
+  'mcq',                      // 4-option MCQ (most flexible)
+  'fill_blank',               // Choose the best word/phrase for the blank
+  'error_spotting',           // A/B/C/D underlined parts — find the error
+  'sentence_improvement',     // Improve or correct a sentence
+  'rewrite_sentence',         // Rewrite sentence following a constraint
+  'connector_selection',      // Choose the best connector/transitional phrase
+  'vocabulary_replacement',   // Replace weak/informal word with formal alternative
+  'paragraph_improvement',    // Improve entire paragraph (grammar, coherence)
+  'complete_sentence',        // Fill in missing part of sentence
+  'replace_weak_connector',   // Identify and replace weak connector
+  'identify_wrong_connector', // Spot incorrect connector in context
+
+  // Legacy types (for backward compatibility with existing 1000 questions)
+  'mcq-correction',           // 4-option MCQ where one option is the correction
+  'error-spotting',           // A/B/C/D underlined parts
+  'fill-blank',               // Choose best word/phrase
+  'best-sentence',            // Choose best sentence
+  'voice-conversion',         // Active ↔ Passive
+  'speech-conversion',        // Direct ↔ Indirect
+  'formal-usage',             // Choose formal option
+  'mixed-rule',               // Tests 2+ rules
 ])
 
 export const ALLOWED_DIFFICULTIES = new Set(['B1', 'B2', 'C1', 'C2'])
 
 export const ALLOWED_SOURCE_STATUSES = new Set(['sample-practice', 'real-pyq'])
+
+export const ALLOWED_LEVELS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+export const ALLOWED_MISTAKE_TYPES = new Set([
+  'grammar-error',
+  'spelling-error',
+  'vocabulary-error',
+  'punctuation-error',
+  'sentence-structure',
+  'word-order',
+  'article-usage',
+  'subject-verb-agreement',
+  'tense-consistency',
+  'preposition-usage',
+  'connector-usage',
+  'pronoun-reference',
+  'parallelism',
+  'modifiers',
+  'capitalization',
+  'formality-register',
+  'logic-clarity',
+  'multiple-errors',
+])
 
 // ── Category → Code map (for ID generation) ──────────────────────────────────
 

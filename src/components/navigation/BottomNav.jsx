@@ -5,6 +5,7 @@ const tabs = [
   { to: '/grammar', icon: 'menu_book', label: 'Grammar' },
   { to: '/pyqs', icon: 'history_edu', label: 'PYQs' },
   { to: '/revision', icon: 'replay', label: 'Revision' },
+  { to: '/mistakes', icon: 'error', label: 'Mistakes' },
   { to: '/analytics', icon: 'bar_chart', label: 'Analytics' },
 ]
 

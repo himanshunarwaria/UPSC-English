@@ -3,12 +3,20 @@ import { ProgressProvider } from './hooks/useProgressContext'
 import ErrorBoundary from './components/ui/ErrorBoundary'
 import BottomNav from './components/navigation/BottomNav'
 import TopBar from './components/navigation/TopBar'
+import ProtectedRoute from './components/routing/ProtectedRoute'
+import LevelAccessGuard from './components/routing/LevelAccessGuard'
 import Today from './screens/Today'
 import Grammar from './screens/Grammar'
 import Practice from './screens/Practice'
 import PYQs from './screens/PYQs'
 import PYQYearDetail from './screens/PYQYearDetail'
 import Revision from './screens/Revision'
+import Mistakes from './screens/Mistakes'
+import LevelTest from './screens/LevelTest'
+import VocabularyBank from './screens/VocabularyBank'
+import ConnectorPractice from './screens/ConnectorPractice'
+import ProgressReport from './screens/ProgressReport'
+import SentenceBuilder from './screens/SentenceBuilder'
 import Analytics from './screens/Analytics'
 
 // AppContent uses useLocation inside the Router context so it can
@@ -22,13 +30,24 @@ function AppContent() {
       {!isPractice && <TopBar />}
       <div className={`flex-1 flex flex-col${!isPractice ? ' pt-14' : ''}`}>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Today />} />
           <Route path="/grammar" element={<Grammar />} />
-          <Route path="/practice" element={<Practice />} />
           <Route path="/pyqs" element={<PYQs />} />
           <Route path="/pyqs/:year" element={<PYQYearDetail />} />
-          <Route path="/revision" element={<Revision />} />
           <Route path="/analytics" element={<Analytics />} />
+
+          {/* Protected Routes — Requires Login */}
+          <Route path="/practice" element={<ProtectedRoute element={<Practice />} />} />
+          <Route path="/level-test" element={<ProtectedRoute element={<LevelTest />} />} />
+          <Route path="/revision" element={<ProtectedRoute element={<Revision />} />} />
+          <Route path="/mistakes" element={<ProtectedRoute element={<Mistakes />} />} />
+          <Route path="/vocabulary" element={<ProtectedRoute element={<VocabularyBank />} />} />
+          <Route path="/connectors" element={<ProtectedRoute element={<ConnectorPractice />} />} />
+          <Route path="/progress" element={<ProtectedRoute element={<ProgressReport />} />} />
+          <Route path="/sentence-builder" element={<ProtectedRoute element={<SentenceBuilder />} />} />
+
+          {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

@@ -6,6 +6,8 @@ import pyqQuestions from '../data/pyqQuestions'
 import { queryPYQs } from '../data/pyqs/index.js'
 import Badge from '../components/ui/Badge'
 import Icon from '../components/ui/Icon'
+import userTrackingService from '../services/userTrackingService'
+import { normalizeQuestion } from '../data/questions/metadataNormalizer'
 
 // ── Helpers (logic unchanged) ───────────────────────────────────────────────
 
@@ -327,6 +329,11 @@ function SubjectiveBlock({ q, revealed, onShow, onRate, onSkip }) {
         </div>
       )}
 
+      {/* Question counter */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <p className="text-2xs font-semibold text-on-dim">Question {index + 1} of {questions.length}</p>
+      </div>
+
       {/* Question prompt */}
       <div className="bg-surface-container border border-outline-variant rounded-xl px-4 py-3">
         <p className="text-base text-on leading-relaxed whitespace-pre-line">{q.questionText || q.question}</p>
@@ -428,6 +435,10 @@ export default function Practice() {
   const [params] = useSearchParams()
   const { attempted, revisionQueue, bookmarks, recordAnswer, recordReview, toggleBookmark, isBookmarked } = useProgressContext()
 
+  // Get logged-in user ID for tracking
+  const userId = userTrackingService.getLoggedInUserId()
+  const startTimeRef = useRef(Date.now())
+
   const mode        = params.get('mode') || 'quick'
   const topic       = params.get('topic') || 'all'
   const isTimed     = mode === 'timed'
@@ -480,6 +491,29 @@ export default function Practice() {
     if (timedOut) { setTimedOut(false); doReveal(selectedRef.current) }
   }, [timedOut])
 
+  // Save attempt to user tracking service
+  function saveAttemptToTracking(question, selectedAnswer, isCorrect) {
+    if (!userId) return // Only save if user is logged in
+
+    const normalized = normalizeQuestion(question)
+    const timeTaken = Math.round((Date.now() - startTimeRef.current) / 1000)
+
+    userTrackingService.saveQuestionAttempt({
+      user_id: userId,
+      question_id: question.id,
+      level: normalized.level || 1,
+      topic: normalized.topic || 'Unknown',
+      subtopic: normalized.subtopic || 'Unknown',
+      selected_answer: selectedAnswer,
+      correct_answer: question.correctAnswer ?? 0,
+      is_correct: isCorrect === true,
+      time_taken_seconds: timeTaken,
+      mistake_type: normalized.mistake_type || null,
+    })
+
+    startTimeRef.current = Date.now() // Reset timer for next question
+  }
+
   function advance() {
     if (index + 1 >= questions.length) {
       setDone(true)
@@ -498,6 +532,7 @@ export default function Practice() {
     const cur = questions[index]
     if (!cur) return
     const isCorrect = recordAnswer(cur, finalSel)
+    saveAttemptToTracking(cur, finalSel, isCorrect)
     setAnswers(prev => [...prev, { question: cur, selected: finalSel, isCorrect }])
   }
 
@@ -506,6 +541,23 @@ export default function Practice() {
   function rateSubjective(rating) {
     const cur = questions[index]
     recordReview(cur, rating)
+    // Save subjective question attempt (no isCorrect, tracking for review purposes)
+    if (userId) {
+      const normalized = normalizeQuestion(cur)
+      userTrackingService.saveQuestionAttempt({
+        user_id: userId,
+        question_id: cur.id,
+        level: normalized.level || 1,
+        topic: normalized.topic || 'Unknown',
+        subtopic: normalized.subtopic || 'Unknown',
+        selected_answer: null,
+        correct_answer: null,
+        is_correct: null, // Subjective questions not auto-graded
+        time_taken_seconds: Math.round((Date.now() - startTimeRef.current) / 1000),
+        mistake_type: null,
+      })
+      startTimeRef.current = Date.now()
+    }
     setAnswers(prev => [...prev, { question: cur, selected: null, isCorrect: null, selfRating: rating }])
     advance()
   }
@@ -514,9 +566,28 @@ export default function Practice() {
     const cur = questions[index]
     if (isObjective(cur)) {
       recordAnswer(cur, -1)
+      // Save skipped objective question as incorrect
+      saveAttemptToTracking(cur, -1, false)
       setAnswers(prev => [...prev, { question: cur, selected: -1, isCorrect: false }])
     } else {
       recordReview(cur, 'review')
+      // Save skipped subjective question
+      if (userId) {
+        const normalized = normalizeQuestion(cur)
+        userTrackingService.saveQuestionAttempt({
+          user_id: userId,
+          question_id: cur.id,
+          level: normalized.level || 1,
+          topic: normalized.topic || 'Unknown',
+          subtopic: normalized.subtopic || 'Unknown',
+          selected_answer: null,
+          correct_answer: null,
+          is_correct: null,
+          time_taken_seconds: Math.round((Date.now() - startTimeRef.current) / 1000),
+          mistake_type: null,
+        })
+        startTimeRef.current = Date.now()
+      }
       setAnswers(prev => [...prev, { question: cur, selected: null, isCorrect: null, selfRating: 'review' }])
     }
     advance()

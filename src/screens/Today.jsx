@@ -1,10 +1,38 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
 import Icon from '../components/ui/Icon'
+import userTrackingService from '../services/userTrackingService'
+import { UPSC_LEVELS } from '../data/upscLevels'
 
 export default function Today() {
   const navigate = useNavigate()
+  const [accessDeniedMessage, setAccessDeniedMessage] = useState(null)
   const { readiness, streak, revisionQueue, todayAttempted, todayCorrect, topicStats, attempted } = useProgressContext()
+
+  // Check for level access denied message (from LevelAccessGuard)
+  useEffect(() => {
+    const message = sessionStorage.getItem('levelAccessDeniedMessage')
+    if (message) {
+      setAccessDeniedMessage(message)
+      sessionStorage.removeItem('levelAccessDeniedMessage')
+    }
+  }, [])
+
+  // Get UPSC progress data
+  const userId = userTrackingService.getLoggedInUserId()
+  const userProgress = userId ? userTrackingService.getCurrentUserProgress(userId) : null
+  const currentLevel = userProgress?.currentLevel ?? 1
+  const levelData = UPSC_LEVELS.find(l => l.levelNumber === currentLevel) || UPSC_LEVELS[0]
+  const nextLevel = currentLevel < 10 ? UPSC_LEVELS[currentLevel] : null
+
+  // User accuracy (fallback to 0%)
+  const userAccuracy = userId ? userTrackingService.getUserAccuracy(userId) : 0
+  const accuracyColorUpsc = userAccuracy >= 70 ? 'text-success' : userAccuracy >= 50 ? 'text-warn' : userAccuracy > 0 ? 'text-error' : 'text-on-dim'
+
+  // Weak topics
+  const weakTopics = userId ? userTrackingService.getWeakTopics(userId, 1) : []
+  const weakArea = weakTopics.length > 0 ? weakTopics[0].subtopic : null
 
   const today = new Date().toISOString().split('T')[0]
   const todayAttempts = Object.values(attempted).filter(a => a.timestamp?.startsWith(today))
@@ -55,6 +83,9 @@ export default function Today() {
   const doneCount = CHECKLIST.filter(c => c.done).length
   const dateLabel = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
 
+  // Get smart recommendation
+  const recommendation = userId ? userTrackingService.getRecommendedTask(userId) : userTrackingService.getRecommendedTask(null)
+
   return (
     <main className="flex-1 safe-pb overflow-y-auto">
       <div className="max-w-lg mx-auto px-4">
@@ -72,6 +103,21 @@ export default function Today() {
           </p>
         </div>
 
+        {/* Level Access Denied Message */}
+        {accessDeniedMessage && (
+          <button
+            onClick={() => setAccessDeniedMessage(null)}
+            className="w-full mb-4 flex items-start gap-3 bg-warn-dim border border-warn/20 rounded-xl px-4 py-3 text-left hover:opacity-90 transition-opacity active:scale-[0.99]"
+          >
+            <Icon name="lock" size={18} fill className="text-warn flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-warn">Level Locked</p>
+              <p className="text-xs text-on-variant mt-0.5">{accessDeniedMessage}</p>
+            </div>
+            <Icon name="close" size={16} className="text-warn/60 flex-shrink-0 mt-0.5" />
+          </button>
+        )}
+
         {/* Primary CTA — most prominent, above fold */}
         <button
           onClick={() => navigate('/practice?mode=quick&topic=all')}
@@ -81,19 +127,76 @@ export default function Today() {
           Start 15-Min Grammar Drill
         </button>
 
+        {/* Smart Recommendation Card — before stats for quick access */}
+        {recommendation && (
+          <button
+            onClick={() => navigate(recommendation.ctaRoute)}
+            className={`w-full mb-4 flex items-center gap-3 rounded-xl px-4 py-3 text-left hover:opacity-90 transition-opacity active:scale-[0.99] border ${
+              recommendation.taskType === 'mistakes'
+                ? 'bg-error-dim border-error/20'
+                : recommendation.taskType === 'level-test'
+                ? 'bg-primary/10 border-primary/30'
+                : recommendation.taskType === 'vocabulary'
+                ? 'bg-accent-dim border-accent/30'
+                : 'bg-success-dim border-success/20'
+            }`}
+          >
+            <Icon
+              name={
+                recommendation.taskType === 'mistakes' ? 'assignment_late'
+                : recommendation.taskType === 'level-test' ? 'flag'
+                : recommendation.taskType === 'vocabulary' ? 'school'
+                : 'lightbulb'
+              }
+              size={18}
+              fill
+              className={`flex-shrink-0 ${
+                recommendation.taskType === 'mistakes' ? 'text-error'
+                : recommendation.taskType === 'level-test' ? 'text-primary'
+                : recommendation.taskType === 'vocabulary' ? 'text-accent'
+                : 'text-success'
+              }`}
+            />
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-semibold mb-0.5 ${
+                recommendation.taskType === 'mistakes' ? 'text-error'
+                : recommendation.taskType === 'level-test' ? 'text-primary'
+                : recommendation.taskType === 'vocabulary' ? 'text-accent'
+                : 'text-success'
+              }`}>
+                {recommendation.title}
+              </p>
+              <p className="text-xs text-on-dim leading-snug">{recommendation.description}</p>
+            </div>
+            <Icon name="arrow_forward" size={16} className="flex-shrink-0 opacity-50" />
+          </button>
+        )}
+
         {/* Bento stats grid */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="grid grid-cols-2 gap-3 mb-5">
+
+          {/* Current Level — UPSC Progress Card (full-width) */}
+          <div className="col-span-2 bg-surface-container border border-outline-variant rounded-xl px-4 py-4">
+            <div className="flex items-baseline justify-between mb-2">
+              <p className="text-2xs font-medium text-on-dim uppercase tracking-widest">Current Level</p>
+              <p className="font-display font-bold text-2xl leading-none text-primary">
+                Level {currentLevel}
+              </p>
+            </div>
+            <p className="text-sm text-on font-semibold">{levelData.title}</p>
+            <p className="text-xs text-on-variant mt-2 leading-snug">{levelData.shortDescription}</p>
+          </div>
 
           {/* Readiness — full-width progress card */}
-          <div className="col-span-2 bg-surface-container border border-outline-variant rounded-xl px-4 py-3">
-            <div className="flex items-baseline justify-between mb-2">
+          <div className="col-span-2 bg-surface-container border border-outline-variant rounded-xl px-4 py-4">
+            <div className="flex items-baseline justify-between mb-3">
               <p className="text-2xs font-medium text-on-dim uppercase tracking-widest">Readiness Score</p>
-              <p className={`font-display font-bold text-xl leading-none ${readinessColor}`}>
+              <p className={`font-display font-bold text-2xl leading-none ${readinessColor}`}>
                 {readiness}
                 <span className="text-xs font-normal text-on-dim ml-0.5">/ 100</span>
               </p>
             </div>
-            <div className="h-1.5 w-full bg-surface-low rounded-full overflow-hidden">
+            <div className="h-2 w-full bg-surface-low rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${readinessBar}`}
                 style={{ width: `${readiness}%` }}
@@ -101,13 +204,26 @@ export default function Today() {
             </div>
           </div>
 
-          {/* Grammar accuracy */}
+          {/* UPSC Overall Accuracy */}
+          <div className="bg-surface-container border border-outline-variant rounded-xl p-4 flex flex-col justify-between min-h-[105px]">
+            <p className={`font-display font-bold text-3xl leading-tight mb-1 ${accuracyColorUpsc}`}>
+              {userAccuracy > 0 ? `${userAccuracy}%` : '—'}
+            </p>
+            <div>
+              <p className="text-xs font-semibold text-on-variant">Accuracy</p>
+              <p className="text-2xs text-on-dim mt-0.5">overall</p>
+            </div>
+          </div>
+
+          {/* Today's Accuracy */}
           <div className="bg-surface-container border border-outline-variant rounded-xl p-3">
-            <p className={`font-display font-bold text-2xl leading-none mb-0.5 ${accuracyColor}`}>
+            <p className={`font-display font-bold text-3xl leading-tight mb-1 ${accuracyColor}`}>
               {todayAccuracy !== null ? `${todayAccuracy}%` : '—'}
             </p>
-            <p className="text-xs text-on-variant">Accuracy</p>
-            <p className="text-2xs text-on-dim mt-0.5">today</p>
+            <div>
+              <p className="text-xs font-semibold text-on-variant">Accuracy</p>
+              <p className="text-2xs text-on-dim mt-0.5">today</p>
+            </div>
           </div>
 
           {/* Day streak */}
@@ -117,7 +233,7 @@ export default function Today() {
                 {streak.count}
               </p>
               {streak.count > 0 && (
-                <Icon name="local_fire_department" size={14} fill className="text-warn" />
+                <Icon name="local_fire_department" size={16} fill className="text-warn" />
               )}
             </div>
             <p className="text-xs text-on-variant">Streak</p>
@@ -126,7 +242,7 @@ export default function Today() {
 
           {/* Questions attempted today */}
           <div className="bg-surface-container border border-outline-variant rounded-xl p-3">
-            <p className="font-display font-bold text-2xl leading-none mb-0.5 text-on">
+            <p className="font-display font-bold text-3xl leading-tight mb-1 text-on">
               {todayAttempted}
             </p>
             <p className="text-xs text-on-variant">Attempted</p>
@@ -135,7 +251,7 @@ export default function Today() {
 
           {/* Revision due */}
           <div className="bg-surface-container border border-outline-variant rounded-xl p-3">
-            <p className={`font-display font-bold text-2xl leading-none mb-0.5 ${revisionQueue.length > 0 ? 'text-error' : 'text-success'}`}>
+            <p className={`font-display font-bold text-3xl leading-tight mb-1 ${revisionQueue.length > 0 ? 'text-error' : 'text-success'}`}>
               {revisionQueue.length}
             </p>
             <p className="text-xs text-on-variant">Revision Due</p>
@@ -144,7 +260,39 @@ export default function Today() {
             </p>
           </div>
 
+          {/* Weak Area — UPSC Focused */}
+          <div className="col-span-2 bg-surface-container border border-outline-variant rounded-xl p-3">
+            <p className="text-2xs font-medium text-on-dim uppercase tracking-widest mb-1">Weak Area</p>
+            <p className="text-sm text-on font-medium">
+              {weakArea || 'Start practice to identify weak areas'}
+            </p>
+            {weakTopics.length > 0 && (
+              <p className="text-2xs text-on-dim mt-1">
+                {weakTopics[0].accuracy}% accuracy — focus here
+              </p>
+            )}
+          </div>
+
+          {/* Next Level Unlock Progress — if not at Level 10 */}
+          {nextLevel && currentLevel < 10 && (
+            <div className="col-span-2 bg-surface-container border border-outline-variant rounded-xl px-4 py-3">
+              <div className="flex items-baseline justify-between mb-2">
+                <p className="text-2xs font-medium text-on-dim uppercase tracking-widest">Unlock Level {currentLevel + 1}</p>
+                <p className="text-2xs text-on-dim">Score 80% in Level {currentLevel} Test</p>
+              </div>
+              <p className="text-sm text-on font-medium">{nextLevel.title}</p>
+              <div className="h-1.5 w-full bg-surface-low rounded-full overflow-hidden mt-2">
+                <div
+                  className="h-full rounded-full transition-all duration-500 bg-primary"
+                  style={{ width: `${Math.min(userAccuracy, 100)}%` }}
+                />
+              </div>
+              <p className="text-2xs text-on-dim mt-1">{userAccuracy}% progress to unlock</p>
+            </div>
+          )}
+
         </div>
+
 
         {/* Weakest topic alert — only when there is meaningful data */}
         {weakestEntry && (
@@ -180,6 +328,24 @@ export default function Today() {
             <Icon name="arrow_forward" size={16} className="text-error/60 flex-shrink-0" />
           </button>
         )}
+
+        {/* UPSC Action Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <button
+            onClick={() => navigate(`/practice?level=${currentLevel}`)}
+            className="flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
+          >
+            <Icon name="play_arrow" size={18} fill className="text-white" />
+            Continue
+          </button>
+          <button
+            onClick={() => navigate('/revision')}
+            className="flex items-center justify-center gap-2 bg-warn text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
+          >
+            <Icon name="assignment" size={18} fill className="text-white" />
+            Review
+          </button>
+        </div>
 
         {/* Today's Tasks — Stitch Apple Reminders style */}
         <div className="mb-6">
