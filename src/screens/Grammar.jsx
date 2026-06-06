@@ -5,7 +5,7 @@ import { useProgressContext } from '../hooks/useProgressContext'
 import { getQuestionsByTopic, getAllQuestions } from '../data/questions/getQuestions'
 import Icon from '../components/ui/Icon'
 
-// Get all questions once at module level for stable reference across renders
+// Get all questions once at module level for stable reference across renders (v2 - force redeploy)
 const ALL_GRAMMAR_QUESTIONS = getAllQuestions()
 
 // Map question IDs to their topics for revision queue aggregation
