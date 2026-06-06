@@ -5,16 +5,8 @@ import { useProgressContext } from '../hooks/useProgressContext'
 import { getQuestionsByTopic, getAllQuestions } from '../data/questions/getQuestions'
 import Icon from '../components/ui/Icon'
 
-// Get all questions once at module level for stable reference across renders (v2 - force redeploy)
+// Get all questions once at module level for stable reference across renders
 const ALL_GRAMMAR_QUESTIONS = getAllQuestions()
-
-// Map question IDs to their topics for revision queue aggregation
-// Safe fallback: if a question lacks a topic, use empty string
-const Q_TOPIC_MAP = ALL_GRAMMAR_QUESTIONS && Array.isArray(ALL_GRAMMAR_QUESTIONS)
-  ? Object.fromEntries(
-      ALL_GRAMMAR_QUESTIONS.map(q => [q?.id || q?.topic || '', q?.topic || ''])
-    )
-  : {}
 
 // Pre-computed at module level — stable across renders
 const TOPIC_TOTALS = GRAMMAR_CATEGORIES.reduce((acc, cat) => {
@@ -141,9 +133,24 @@ export default function Grammar() {
 
   // Per-topic wrong count from the global revision queue
   const topicWrongCounts = useMemo(() => {
+    // Build Q_TOPIC_MAP safely on demand
+    const qTopicMap = {}
+    try {
+      if (ALL_GRAMMAR_QUESTIONS && Array.isArray(ALL_GRAMMAR_QUESTIONS)) {
+        ALL_GRAMMAR_QUESTIONS.forEach(q => {
+          if (q?.id && q?.topic) {
+            qTopicMap[q.id] = q.topic
+          }
+        })
+      }
+    } catch (e) {
+      console.warn('Failed to build Q_TOPIC_MAP:', e)
+    }
+
+    // Count wrong answers per topic
     const counts = {}
     revisionQueue.forEach(id => {
-      const topic = Q_TOPIC_MAP[id]
+      const topic = qTopicMap[id]
       if (topic) counts[topic] = (counts[topic] || 0) + 1
     })
     return counts
