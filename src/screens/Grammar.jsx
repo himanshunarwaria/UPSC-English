@@ -9,9 +9,12 @@ import Icon from '../components/ui/Icon'
 const ALL_GRAMMAR_QUESTIONS = getAllQuestions()
 
 // Map question IDs to their topics for revision queue aggregation
-const Q_TOPIC_MAP = Object.fromEntries(
-  ALL_GRAMMAR_QUESTIONS.map(q => [q.id || q.topic, q.topic])
-)
+// Safe fallback: if a question lacks a topic, use empty string
+const Q_TOPIC_MAP = ALL_GRAMMAR_QUESTIONS && Array.isArray(ALL_GRAMMAR_QUESTIONS)
+  ? Object.fromEntries(
+      ALL_GRAMMAR_QUESTIONS.map(q => [q?.id || q?.topic || '', q?.topic || ''])
+    )
+  : {}
 
 // Pre-computed at module level — stable across renders
 const TOPIC_TOTALS = GRAMMAR_CATEGORIES.reduce((acc, cat) => {
