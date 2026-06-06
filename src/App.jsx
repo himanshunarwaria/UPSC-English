@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ProgressProvider } from './hooks/useProgressContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import ErrorBoundary from './components/ui/ErrorBoundary'
 import BottomNav from './components/navigation/BottomNav'
 import TopBar from './components/navigation/TopBar'
 import ProtectedRoute from './components/routing/ProtectedRoute'
 import LevelAccessGuard from './components/routing/LevelAccessGuard'
+import Login from './screens/Login'
 import Today from './screens/Today'
 import Grammar from './screens/Grammar'
 import Practice from './screens/Practice'
@@ -19,11 +21,16 @@ import ProgressReport from './screens/ProgressReport'
 import SentenceBuilder from './screens/SentenceBuilder'
 import Analytics from './screens/Analytics'
 
-// AppContent uses useLocation inside the Router context so it can
-// conditionally hide the TopBar and remove the pt-14 offset on /practice.
 function AppContent() {
+  const { user } = useAuth()
   const { pathname } = useLocation()
   const isPractice = pathname === '/practice'
+
+  // Still resolving auth state — render nothing to avoid flash
+  if (user === undefined) return null
+
+  // Not logged in — show full-screen login
+  if (user === null) return <Login />
 
   return (
     <div className="min-h-screen bg-surface flex flex-col" style={{ minHeight: '100dvh' }}>
@@ -60,9 +67,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <ErrorBoundary>
-        <ProgressProvider>
-          <AppContent />
-        </ProgressProvider>
+        <AuthProvider>
+          <ProgressProvider>
+            <AppContent />
+          </ProgressProvider>
+        </AuthProvider>
       </ErrorBoundary>
     </BrowserRouter>
   )

@@ -12,6 +12,7 @@
     "validate:questions": "node src/utils/validateQuestionBank.js"
   },
   "dependencies": {
+    "firebase": "^12.14.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0"
