@@ -1,12 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom'
 
 const tabs = [
-  { to: '/', icon: 'today', label: 'Today' },
-  { to: '/grammar', icon: 'menu_book', label: 'Grammar' },
-  { to: '/pyqs', icon: 'history_edu', label: 'PYQs' },
+  { to: '/', icon: 'home', label: 'Home' },
   { to: '/revision', icon: 'replay', label: 'Revision' },
   { to: '/mistakes', icon: 'error', label: 'Mistakes' },
-  { to: '/practice?mode=select', icon: 'quiz', label: 'Practice' },
+  { to: '/progress', icon: 'bar_chart', label: 'Progress' },
+  { to: '/grammar', icon: 'menu_book', label: 'Grammar' },
 ]
 
 export default function BottomNav() {

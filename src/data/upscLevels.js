@@ -9,8 +9,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_1',
     levelNumber: 1,
-    title: 'Basic Grammar Foundation',
-    shortDescription: 'Master fundamental grammar rules and common errors',
+    title: 'Foundation',
+    difficultyLabel: 'Easiest',
+    shortDescription: 'Basic grammar and simple usage questions.',
     coreSkills: [
       'Identify subject-verb agreement errors',
       'Use articles correctly (a, an, the)',
@@ -36,8 +37,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_2',
     levelNumber: 2,
-    title: 'Common Grammar Mistakes',
-    shortDescription: 'Fix the most frequent English errors in UPSC exams',
+    title: 'Common Errors',
+    difficultyLabel: 'Very Easy',
+    shortDescription: 'Common grammar mistakes and simple sentence correction.',
     coreSkills: [
       'Master all tense combinations',
       'Use modals correctly (can, should, must, etc.)',
@@ -64,8 +66,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_3',
     levelNumber: 3,
-    title: 'Articles, Prepositions & Modals Mastery',
-    shortDescription: 'Advanced mastery of articles, prepositions, and modal verbs',
+    title: 'Articles, Prepositions & Modals',
+    difficultyLabel: 'Easy',
+    shortDescription: 'Articles, prepositions, modals, and basic error spotting.',
     coreSkills: [
       'Master complex article usage (the, a, zero article)',
       'Apply advanced prepositions in formal contexts',
@@ -87,8 +90,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_4',
     levelNumber: 4,
-    title: 'Sentence Connectors & Coherence',
-    shortDescription: 'Master connectors to write coherent, flowing paragraphs',
+    title: 'Sentence Connectors',
+    difficultyLabel: 'Lower Intermediate',
+    shortDescription: 'Sentence connectors, grammar usage, and short sentence improvement.',
     coreSkills: [
       'Use addition connectors effectively (furthermore, moreover)',
       'Use contrast connectors clearly (however, nevertheless)',
@@ -113,8 +117,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_5',
     levelNumber: 5,
-    title: 'Common to Advanced Word Replacement',
-    shortDescription: 'Replace basic vocabulary with formal, academic alternatives',
+    title: 'Vocabulary & Word Choice',
+    difficultyLabel: 'Intermediate',
+    shortDescription: 'Formal vocabulary and better word choice.',
     coreSkills: [
       'Replace informal words with formal equivalents',
       'Upgrade common words to academic vocabulary',
@@ -137,7 +142,8 @@ export const UPSC_LEVELS = [
     id: 'level_6',
     levelNumber: 6,
     title: 'Phrasal Verbs & Formal Alternatives',
-    shortDescription: 'Master phrasal verbs and their formal replacements',
+    difficultyLabel: 'Upper Intermediate',
+    shortDescription: 'Phrasal verbs, formal alternatives, and usage accuracy.',
     coreSkills: [
       'Understand phrasal verb meanings in context',
       'Replace phrasal verbs with formal alternatives',
@@ -159,8 +165,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_7',
     levelNumber: 7,
-    title: 'Sentence Structure Improvement',
-    shortDescription: 'Transform simple sentences into complex, well-structured ones',
+    title: 'Advanced Sentence Structure',
+    difficultyLabel: 'Advanced',
+    shortDescription: 'Sentence structure and advanced correction.',
     coreSkills: [
       'Convert simple sentences to complex structures',
       'Correct sentence fragments',
@@ -187,8 +194,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_8',
     levelNumber: 8,
-    title: 'Academic Vocabulary for UPSC Writing',
-    shortDescription: 'Master domain-specific vocabulary for UPSC answer writing',
+    title: 'Academic Vocabulary',
+    difficultyLabel: 'High Advanced',
+    shortDescription: 'Academic vocabulary and domain-specific UPSC usage.',
     coreSkills: [
       'Use governance vocabulary precisely',
       'Apply economic terminology accurately',
@@ -221,8 +229,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_9',
     levelNumber: 9,
-    title: 'UPSC Answer-Writing English',
-    shortDescription: 'Master English specifically for UPSC answer writing excellence',
+    title: 'UPSC Answer Writing',
+    difficultyLabel: 'Mains Advanced',
+    shortDescription: 'UPSC answer-writing language, tone, and clarity.',
     coreSkills: [
       'Write compelling introductions',
       'Structure effective body paragraphs',
@@ -249,8 +258,9 @@ export const UPSC_LEVELS = [
   {
     id: 'level_10',
     levelNumber: 10,
-    title: 'Full UPSC English Test Mode',
-    shortDescription: 'Master all English skills in a comprehensive mock test environment',
+    title: 'Full UPSC Mastery',
+    difficultyLabel: 'Exam Mastery',
+    shortDescription: 'Toughest mixed questions for full UPSC English readiness.',
     coreSkills: [
       'Apply all grammar rules in mixed contexts',
       'Use vocabulary in varied academic contexts',

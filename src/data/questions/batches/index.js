@@ -94,12 +94,13 @@ import batch_011_sentence_connectors_p3 from './batch_011_sentence_connectors_pa
 import batch_011_sentence_connectors_p4 from './batch_011_sentence_connectors_part_04.js'
 import batch_011_sentence_connectors_p5 from './batch_011_sentence_connectors_part_05.js'
 
-// Level 6 — Phrasal Verbs: Formal Replacements (batch 012 parts 1–5, 100Q total)
+// Level 6 — Phrasal Verbs: Formal Replacements (batch 012 parts 1–6, 110Q total)
 import batch_012_phrasal_verbs from './batch_012_phrasal_verbs_part_01.js'
 import batch_012_phrasal_verbs_p2 from './batch_012_phrasal_verbs_part_02.js'
 import batch_012_phrasal_verbs_p3 from './batch_012_phrasal_verbs_part_03.js'
 import batch_012_phrasal_verbs_p4 from './batch_012_phrasal_verbs_part_04.js'
 import batch_012_phrasal_verbs_p5 from './batch_012_phrasal_verbs_part_05.js'
+import batch_012_phrasal_verbs_p6 from './batch_012_phrasal_verbs_part_06.js'
 
 // Level 8 — Academic Vocabulary (batch 013 parts 1–5, 100Q total — COMPLETE)
 import batch_013_academic_vocab from './batch_013_academic_vocabulary_part_01.js'
@@ -196,6 +197,7 @@ const allBatches = [
   ...batch_012_phrasal_verbs_p3,
   ...batch_012_phrasal_verbs_p4,
   ...batch_012_phrasal_verbs_p5,
+  ...batch_012_phrasal_verbs_p6,
   ...batch_013_academic_vocab,
   ...batch_013_academic_vocab_p2,
   ...batch_013_academic_vocab_p3,

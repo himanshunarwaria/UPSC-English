@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
 import { getAllQuestions } from '../data/questions/getQuestions'
 import {
@@ -753,6 +753,7 @@ export default function Practice() {
   // Per-question session state — keyed by question index
   // { selected, isCorrect, revealed, savedAttempt, selfRating? }
   const [sessionAnswers, setSessionAnswers] = useState({})
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const timerRef    = useRef(null)
   const selectedRef = useRef(null)
   useEffect(() => { selectedRef.current = selected }, [selected])
@@ -839,6 +840,14 @@ export default function Practice() {
     setSelected(saved.selected ?? null)
     setRevealed(saved.revealed ?? false)
     setTimeLeft(timePerQ)
+  }
+
+  function handleClose() {
+    if (answers.length === 0) {
+      navigate('/')
+    } else {
+      setShowLeaveConfirm(true)
+    }
   }
 
   function doReveal(sel) {
@@ -942,7 +951,7 @@ export default function Practice() {
 
   // ── Selection mode — render picker before any drill state ─────────────────
   if (isSelectionMode) {
-    return <PracticeSelector navigate={navigate} activeTab={activeTab} />
+    return <Navigate to="/" replace />
   }
 
   // ── Empty state ────────────────────────────────────────────────────────────
@@ -992,13 +1001,37 @@ export default function Practice() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
 
+      {/* ── Leave confirmation overlay ──────────────────────────────────── */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+          <div className="w-full max-w-sm bg-surface-container border border-outline-variant rounded-2xl p-6 shadow-xl">
+            <p className="text-base font-semibold text-on mb-1">Leave this session?</p>
+            <p className="text-sm text-on-variant mb-5">Your answered questions are already saved.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-outline-variant bg-surface-low text-sm font-medium text-on-variant hover:bg-outline-variant active:scale-[0.98] transition-all"
+              >
+                Stay
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="flex-1 py-2.5 rounded-xl bg-error text-white text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all"
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Persistent top bar — always visible, never scrolls ──────────── */}
       <div className="flex-shrink-0 bg-surface border-b border-outline-variant">
 
         {/* Progress row: close · mode/topic · count · progress bar · bookmark */}
         <div className="flex items-center gap-3 px-4 pt-3 pb-2 max-w-4xl mx-auto">
           <button
-            onClick={() => navigate(-1)}
+            onClick={handleClose}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-on-variant hover:bg-surface-low flex-shrink-0 transition-colors"
           >
             <Icon name="close" size={18} />

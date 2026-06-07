@@ -75,6 +75,7 @@ export function getAvailableLevels() {
   return UPSC_LEVELS.map(level => ({
     level: level.levelNumber,
     title: level.title,
+    difficultyLabel: level.difficultyLabel,
     shortDescription: level.shortDescription,
     difficulty: level.difficulty,
     questionCount: stats.byLevel[level.levelNumber] || 0,
