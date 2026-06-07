@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
 import { getAllQuestions } from '../data/questions/getQuestions'
+import {
+  getAllNormalizedQuestions,
+  getAvailableLevels,
+  getTopicsForLevel,
+  getSubtopicsForLevelAndTopic,
+  filterQuestions,
+} from '../services/questionFilterService'
 import pyqQuestions from '../data/pyqQuestions'
 import { queryPYQs } from '../data/pyqs/index.js'
 import Badge from '../components/ui/Badge'
@@ -26,8 +33,9 @@ function shuffle(arr) {
   return a
 }
 
-function selectQuestions({ mode, topic, params, revisionQueue, attempted, bookmarks, count }) {
-  const allQ = [...getAllQuestions(), ...pyqQuestions]
+function selectQuestions({ mode, topic, level, subtopic, params, revisionQueue, attempted, bookmarks, count }) {
+  const normalizedQ = getAllNormalizedQuestions()
+  const allQ = [...normalizedQ, ...pyqQuestions]
 
   if (mode === 'pyq') {
     const id = params.get('id')
@@ -65,10 +73,13 @@ function selectQuestions({ mode, topic, params, revisionQueue, attempted, bookma
     const weakTopics = Object.entries(topicAcc)
       .filter(([, s]) => s.t > 0 && s.c / s.t < 0.6)
       .map(([t]) => t)
-    if (topic !== 'all') pool = allQ.filter(q => q.topic === topic)
-    else pool = weakTopics.length > 0 ? allQ.filter(q => weakTopics.includes(q.topic)) : allQ
+    if (topic !== 'all') pool = normalizedQ.filter(q => q.topic === topic)
+    else pool = weakTopics.length > 0 ? normalizedQ.filter(q => weakTopics.includes(q.topic)) : normalizedQ
   } else {
-    pool = topic === 'all' ? getAllQuestions() : allQ.filter(q => q.topic === topic || q.section === topic)
+    // Default branch: quick, timed, focused — supports level + subtopic filtering
+    pool = topic === 'all' ? normalizedQ : normalizedQ.filter(q => q.topic === topic)
+    if (level != null)   pool = pool.filter(q => q.level === level)
+    if (subtopic != null) pool = pool.filter(q => q.subtopic === subtopic)
   }
 
   const unattempted = pool.filter(q => !attempted[q.id])
@@ -424,11 +435,286 @@ function SubjectiveBlock({ q, revealed, onShow, onRate, onSkip }) {
   )
 }
 
+// ── PracticeSelector ────────────────────────────────────────────────────────
+// Shown when user arrives at /practice without a drill mode param.
+// Provides two tabs: By Level (level cards) and By Topic (cascading picker).
+
+const QUICK_FILTERS = [
+  { label: 'Weak Levels',        icon: 'trending_down', to: '/practice?mode=weakness&topic=all' },
+  { label: 'Answer Writing',     icon: 'edit_note',     to: '/practice?mode=focused&level=9' },
+  { label: 'Connectors',         icon: 'link',          to: '/practice?mode=focused&level=4' },
+  { label: 'Academic Vocab',     icon: 'school',        to: '/practice?mode=focused&level=8' },
+  { label: 'Phrasal Verbs',      icon: 'translate',     to: '/practice?mode=focused&level=6' },
+]
+
+function PracticeSelector({ navigate, activeTab }) {
+  const levels = getAvailableLevels()
+
+  const [selLevel,    setSelLevel]    = useState(null)
+  const [selTopic,    setSelTopic]    = useState(null)
+  const [selSubtopic, setSelSubtopic] = useState(null)
+
+  const topics    = selLevel != null ? getTopicsForLevel(selLevel) : []
+  const subtopics = selLevel != null && selTopic != null
+    ? getSubtopicsForLevelAndTopic(selLevel, selTopic)
+    : []
+
+  const previewCount = filterQuestions({
+    ...(selLevel != null && { level: selLevel }),
+    ...(selTopic != null && { topic: selTopic }),
+    ...(selSubtopic != null && { subtopic: selSubtopic }),
+  }).length
+
+  function handleLevelSelect(lv) {
+    if (selLevel === lv) { setSelLevel(null); setSelTopic(null); setSelSubtopic(null) }
+    else { setSelLevel(lv); setSelTopic(null); setSelSubtopic(null) }
+  }
+
+  function handleTopicSelect(tp) {
+    if (selTopic === tp) { setSelTopic(null); setSelSubtopic(null) }
+    else { setSelTopic(tp); setSelSubtopic(null) }
+  }
+
+  function startFocused() {
+    if (selLevel == null) return
+    const p = new URLSearchParams({ mode: 'focused', level: String(selLevel) })
+    if (selTopic)    p.set('topic', selTopic)
+    if (selSubtopic) p.set('subtopic', selSubtopic)
+    navigate(`/practice?${p.toString()}`)
+  }
+
+  return (
+    <main className="flex-1 safe-pb overflow-y-auto">
+      <div className="max-w-lg mx-auto px-4 pb-8">
+
+        {/* Header */}
+        <div className="pt-5 pb-3">
+          <h1 className="font-display font-bold text-2xl text-on">Practice</h1>
+          <p className="text-sm text-on-variant mt-0.5">Choose a level or topic to practise exactly what you need.</p>
+        </div>
+
+        {/* Quick-start row */}
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => navigate('/practice?mode=quick&topic=all')}
+            className="flex-1 flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all min-h-[44px]"
+          >
+            <Icon name="bolt" size={18} fill className="text-white" />
+            Quick Drill
+          </button>
+          <button
+            onClick={() => navigate('/practice?mode=weakness&topic=all')}
+            className="flex items-center justify-center gap-2 bg-warn-dim border border-warn/20 text-warn text-sm font-semibold px-4 py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all min-h-[44px]"
+          >
+            <Icon name="trending_up" size={18} fill className="text-warn" />
+            Weakness
+          </button>
+          <button
+            onClick={() => navigate('/revision')}
+            className="flex items-center justify-center gap-2 bg-error-dim border border-error/20 text-error text-sm font-semibold px-4 py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all min-h-[44px]"
+          >
+            <Icon name="replay" size={18} fill className="text-error" />
+            Revise
+          </button>
+        </div>
+
+        {/* Quick filter chips — horizontal scroll, no wrap */}
+        <div className="flex gap-2 overflow-x-auto pb-0.5 mb-4" style={{ scrollbarWidth: 'none' }}>
+          {QUICK_FILTERS.map(({ label, icon, to }) => (
+            <button
+              key={label}
+              onClick={() => navigate(to)}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-surface-container border border-outline-variant text-on-variant text-xs font-semibold rounded-xl hover:border-accent/40 hover:text-on active:scale-[0.98] transition-all min-h-[36px]"
+            >
+              <Icon name={icon} size={13} className="text-on-dim flex-shrink-0" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab switcher — By Level / By Topic */}
+        <div className="flex gap-1 mb-4 p-1 bg-surface-low rounded-xl border border-outline-variant">
+          {[
+            { key: 'level', label: 'By Level', icon: 'layers' },
+            { key: 'topic', label: 'By Topic', icon: 'category' },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => navigate(`/practice?mode=${tab.key}`)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
+                activeTab === tab.key
+                  ? 'bg-primary text-white'
+                  : 'text-on-variant hover:text-on'
+              }`}
+            >
+              <Icon name={tab.icon} size={14} fill={activeTab === tab.key} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── By Level ─────────────────────────────────────────────────────── */}
+        {activeTab === 'level' && (
+          <div className="space-y-2">
+            {levels.map(({ level, title, difficulty, questionCount }) => {
+              const statusVariant = questionCount >= 100 ? 'success' : questionCount >= 50 ? 'warn' : 'error'
+              const statusLabel   = questionCount >= 100 ? 'Good'    : questionCount >= 50 ? 'Moderate' : 'Weak'
+              return (
+                <button
+                  key={level}
+                  onClick={() => navigate(`/practice?mode=focused&level=${level}`)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 bg-surface-container border border-outline-variant rounded-xl hover:border-accent/30 hover:bg-accent-dim/10 active:scale-[0.99] transition-all text-left min-h-[68px]"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-bold text-primary">{level}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-on truncate mb-1">{title}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="default" size="xs">{difficulty}</Badge>
+                      <Badge variant={statusVariant} size="xs">{statusLabel}</Badge>
+                      <span className="text-2xs text-on-dim">{questionCount} Q</span>
+                    </div>
+                  </div>
+                  <Icon name="arrow_forward" size={16} className="text-on-dim flex-shrink-0" />
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* ── By Topic ─────────────────────────────────────────────────────── */}
+        {activeTab === 'topic' && (
+          <div className="space-y-5">
+
+            {/* Step 1 — Level grid */}
+            <div>
+              <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">Select Level</p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {levels.map(({ level: lv, questionCount }) => (
+                  <button
+                    key={lv}
+                    onClick={() => handleLevelSelect(lv)}
+                    className={`py-2.5 rounded-xl border text-xs font-bold transition-all min-h-[52px] ${
+                      selLevel === lv
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-surface-container border-outline-variant text-on-variant hover:border-primary/40'
+                    }`}
+                  >
+                    L{lv}
+                    <span className={`block text-2xs font-normal mt-0.5 ${selLevel === lv ? 'text-white/70' : 'text-on-dim'}`}>
+                      {questionCount}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Step 2 — Topic chips with counts */}
+            {topics.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">Select Topic</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {topics.map(tp => {
+                    const count = filterQuestions({ level: selLevel, topic: tp }).length
+                    return (
+                      <button
+                        key={tp}
+                        onClick={() => count > 0 && handleTopicSelect(tp)}
+                        disabled={count === 0}
+                        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all min-h-[44px] ${
+                          selTopic === tp
+                            ? 'bg-accent text-white border-accent'
+                            : count === 0
+                              ? 'bg-surface-low border-outline-variant text-on-dim opacity-40 cursor-not-allowed'
+                              : 'bg-surface-container border-outline-variant text-on-variant hover:border-accent/40'
+                        }`}
+                      >
+                        {tp}
+                        <span className={`text-2xs tabular-nums ${selTopic === tp ? 'text-white/70' : 'text-on-dim'}`}>
+                          {count}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3 — Subtopic chips with counts (only if more than 1 option) */}
+            {subtopics.length > 1 && (
+              <div>
+                <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">
+                  Select Subtopic{' '}
+                  <span className="normal-case text-on-dim font-normal">(optional)</span>
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {subtopics.map(st => {
+                    const count = filterQuestions({ level: selLevel, topic: selTopic, subtopic: st }).length
+                    return (
+                      <button
+                        key={st}
+                        onClick={() => count > 0 && setSelSubtopic(selSubtopic === st ? null : st)}
+                        disabled={count === 0}
+                        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all min-h-[44px] ${
+                          selSubtopic === st
+                            ? 'bg-surface-container border-accent text-accent'
+                            : count === 0
+                              ? 'bg-surface-low border-outline-variant text-on-dim opacity-40 cursor-not-allowed'
+                              : 'bg-surface-container border-outline-variant text-on-variant hover:border-accent/40'
+                        }`}
+                      >
+                        {st}
+                        <span className={`text-2xs tabular-nums ${selSubtopic === st ? 'text-accent/70' : 'text-on-dim'}`}>
+                          {count}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Preview + Start */}
+            {selLevel != null ? (
+              <div className="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-on">
+                    {previewCount > 0 ? `${previewCount} questions available` : 'No questions for this selection'}
+                  </p>
+                  <p className="text-xs text-on-dim mt-0.5 truncate">
+                    {[`Level ${selLevel}`, selTopic, selSubtopic].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <button
+                  onClick={startFocused}
+                  disabled={previewCount === 0}
+                  className="flex-shrink-0 flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 active:scale-[0.99] disabled:opacity-40 transition-all min-h-[44px]"
+                >
+                  Start
+                  <Icon name="arrow_forward" size={16} fill className="text-white" />
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Icon name="filter_list" size={32} className="text-on-dim mx-auto mb-2" />
+                <p className="text-sm text-on-variant">Select a level above to continue</p>
+              </div>
+            )}
+
+          </div>
+        )}
+
+      </div>
+    </main>
+  )
+}
+
 // ── Main Practice screen ────────────────────────────────────────────────────
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D']
-const MODE_LABEL = { quick: 'Quick', timed: 'Timed', weakness: 'Weakness', pyq: 'PYQ', revision: 'Revision' }
-const COUNT_MAP  = { quick: 10, timed: 20, weakness: 15, pyq: 999, revision: 10 }
+const MODE_LABEL = { quick: 'Quick', timed: 'Timed', weakness: 'Weakness', pyq: 'PYQ', revision: 'Revision', focused: 'Focused' }
+const COUNT_MAP  = { quick: 10, timed: 20, weakness: 15, pyq: 999, revision: 10, focused: 15 }
 
 export default function Practice() {
   const navigate = useNavigate()
@@ -439,11 +725,22 @@ export default function Practice() {
   const userId = userTrackingService.getLoggedInUserId()
   const startTimeRef = useRef(Date.now())
 
-  const mode        = params.get('mode') || 'quick'
-  const topic       = params.get('topic') || 'all'
-  const isTimed     = mode === 'timed'
-  const timePerQ    = 60
-  const drillCount  = COUNT_MAP[mode] || 10
+  const rawMode  = params.get('mode')
+  const topic    = params.get('topic') || 'all'
+  const level    = params.get('level') ? parseInt(params.get('level'), 10) : null
+  const subtopic = params.get('subtopic') || null
+
+  // If level/subtopic params are given with no explicit mode, treat as focused drill.
+  // Otherwise show the selection UI for unrecognised or missing mode values.
+  const resolvedMode    = rawMode || (level != null || subtopic != null ? 'focused' : null)
+  const DRILL_MODES     = new Set(['quick', 'timed', 'weakness', 'pyq', 'revision', 'focused'])
+  const isSelectionMode = !resolvedMode || !DRILL_MODES.has(resolvedMode)
+  const mode            = isSelectionMode ? 'quick' : resolvedMode  // 'quick' never used in selection path
+  const activeTab       = rawMode === 'topic' ? 'topic' : 'level'   // tab within selection UI
+
+  const isTimed    = mode === 'timed'
+  const timePerQ   = 60
+  const drillCount = COUNT_MAP[mode] || 10
 
   const [questions, setQuestions] = useState([])
   const [index,     setIndex]     = useState(0)
@@ -453,12 +750,16 @@ export default function Practice() {
   const [done,      setDone]      = useState(false)
   const [timeLeft,  setTimeLeft]  = useState(timePerQ)
   const [timedOut,  setTimedOut]  = useState(false)
+  // Per-question session state — keyed by question index
+  // { selected, isCorrect, revealed, savedAttempt, selfRating? }
+  const [sessionAnswers, setSessionAnswers] = useState({})
   const timerRef    = useRef(null)
   const selectedRef = useRef(null)
   useEffect(() => { selectedRef.current = selected }, [selected])
 
   const loadQuestions = useCallback(() => {
-    const qs = selectQuestions({ mode, topic, params, revisionQueue, attempted, bookmarks, count: drillCount })
+    if (isSelectionMode) return
+    const qs = selectQuestions({ mode, topic, level, subtopic, params, revisionQueue, attempted, bookmarks, count: drillCount })
     setQuestions(qs)
     setIndex(0)
     setSelected(null)
@@ -467,9 +768,11 @@ export default function Practice() {
     setDone(false)
     setTimedOut(false)
     setTimeLeft(timePerQ)
-  }, [mode, topic, revisionQueue, attempted, bookmarks, drillCount, timePerQ])
+    setSessionAnswers({})
+  }, [isSelectionMode, mode, topic, level, subtopic, revisionQueue, attempted, bookmarks, drillCount, timePerQ])
 
-  useEffect(() => { loadQuestions() }, [])
+  // Runs when component mounts or when user transitions from selection → drill
+  useEffect(() => { loadQuestions() }, [isSelectionMode])
 
   const q         = questions[index]
   const objective = q ? isObjective(q) : true
@@ -515,14 +818,27 @@ export default function Practice() {
   }
 
   function advance() {
-    if (index + 1 >= questions.length) {
+    const nextIdx = index + 1
+    if (nextIdx >= questions.length) {
       setDone(true)
     } else {
-      setIndex(i => i + 1)
-      setSelected(null)
-      setRevealed(false)
+      const saved = sessionAnswers[nextIdx] || {}
+      setIndex(nextIdx)
+      setSelected(saved.selected ?? null)
+      setRevealed(saved.revealed ?? false)
       setTimeLeft(timePerQ)
     }
+  }
+
+  function goBack() {
+    if (index === 0) return
+    const prevIdx = index - 1
+    const saved = sessionAnswers[prevIdx] || {}
+    clearInterval(timerRef.current)
+    setIndex(prevIdx)
+    setSelected(saved.selected ?? null)
+    setRevealed(saved.revealed ?? false)
+    setTimeLeft(timePerQ)
   }
 
   function doReveal(sel) {
@@ -532,8 +848,19 @@ export default function Practice() {
     const cur = questions[index]
     if (!cur) return
     const isCorrect = recordAnswer(cur, finalSel)
-    saveAttemptToTracking(cur, finalSel, isCorrect)
-    setAnswers(prev => [...prev, { question: cur, selected: finalSel, isCorrect }])
+    if (!sessionAnswers[index]?.savedAttempt) {
+      saveAttemptToTracking(cur, finalSel, isCorrect)
+    }
+    setSessionAnswers(prev => ({
+      ...prev,
+      [index]: { selected: finalSel, isCorrect, revealed: true, savedAttempt: true },
+    }))
+    setAnswers(prev => {
+      const existing = prev.findIndex(a => a.question.id === cur.id)
+      const entry = { question: cur, selected: finalSel, isCorrect }
+      if (existing >= 0) { const u = [...prev]; u[existing] = entry; return u }
+      return [...prev, entry]
+    })
   }
 
   function showModelAnswer() { setRevealed(true) }
@@ -541,8 +868,7 @@ export default function Practice() {
   function rateSubjective(rating) {
     const cur = questions[index]
     recordReview(cur, rating)
-    // Save subjective question attempt (no isCorrect, tracking for review purposes)
-    if (userId) {
+    if (userId && !sessionAnswers[index]?.savedAttempt) {
       const normalized = normalizeQuestion(cur)
       userTrackingService.saveQuestionAttempt({
         user_id: userId,
@@ -552,13 +878,22 @@ export default function Practice() {
         subtopic: normalized.subtopic || 'Unknown',
         selected_answer: null,
         correct_answer: null,
-        is_correct: null, // Subjective questions not auto-graded
+        is_correct: null,
         time_taken_seconds: Math.round((Date.now() - startTimeRef.current) / 1000),
         mistake_type: null,
       })
       startTimeRef.current = Date.now()
     }
-    setAnswers(prev => [...prev, { question: cur, selected: null, isCorrect: null, selfRating: rating }])
+    setSessionAnswers(prev => ({
+      ...prev,
+      [index]: { selected: null, isCorrect: null, revealed: true, savedAttempt: true, selfRating: rating },
+    }))
+    setAnswers(prev => {
+      const existing = prev.findIndex(a => a.question.id === cur.id)
+      const entry = { question: cur, selected: null, isCorrect: null, selfRating: rating }
+      if (existing >= 0) { const u = [...prev]; u[existing] = entry; return u }
+      return [...prev, entry]
+    })
     advance()
   }
 
@@ -566,12 +901,17 @@ export default function Practice() {
     const cur = questions[index]
     if (isObjective(cur)) {
       recordAnswer(cur, -1)
-      // Save skipped objective question as incorrect
       saveAttemptToTracking(cur, -1, false)
-      setAnswers(prev => [...prev, { question: cur, selected: -1, isCorrect: false }])
+      setSessionAnswers(prev => ({
+        ...prev,
+        [index]: { selected: -1, isCorrect: false, revealed: true, savedAttempt: true },
+      }))
+      setAnswers(prev => {
+        if (prev.some(a => a.question.id === cur.id)) return prev
+        return [...prev, { question: cur, selected: -1, isCorrect: false }]
+      })
     } else {
       recordReview(cur, 'review')
-      // Save skipped subjective question
       if (userId) {
         const normalized = normalizeQuestion(cur)
         userTrackingService.saveQuestionAttempt({
@@ -588,9 +928,21 @@ export default function Practice() {
         })
         startTimeRef.current = Date.now()
       }
-      setAnswers(prev => [...prev, { question: cur, selected: null, isCorrect: null, selfRating: 'review' }])
+      setSessionAnswers(prev => ({
+        ...prev,
+        [index]: { selected: null, isCorrect: null, revealed: true, savedAttempt: true, selfRating: 'review' },
+      }))
+      setAnswers(prev => {
+        if (prev.some(a => a.question.id === cur.id)) return prev
+        return [...prev, { question: cur, selected: null, isCorrect: null, selfRating: 'review' }]
+      })
     }
     advance()
+  }
+
+  // ── Selection mode — render picker before any drill state ─────────────────
+  if (isSelectionMode) {
+    return <PracticeSelector navigate={navigate} activeTab={activeTab} />
   }
 
   // ── Empty state ────────────────────────────────────────────────────────────
@@ -627,7 +979,7 @@ export default function Practice() {
   // ── Active drill ───────────────────────────────────────────────────────────
   const progress   = ((index + (revealed ? 1 : 0)) / questions.length) * 100
   const bookmarked = isBookmarked(q.id)
-  const lastAnswer = answers[answers.length - 1]
+  const lastAnswer = q ? answers.find(a => a.question.id === q.id) : null
   const instruction = TYPE_INSTRUCTION[q.type] || null
   const isLastQ    = index + 1 >= questions.length
 
@@ -753,7 +1105,12 @@ export default function Practice() {
                         selected={selected === i}
                         revealed={revealed}
                         isCorrect={i === q.correctAnswer}
-                        onClick={() => { if (!revealed) setSelected(i) }}
+                        onClick={() => {
+                          if (!revealed) {
+                            setSelected(i)
+                            setSessionAnswers(prev => ({ ...prev, [index]: { ...(prev[index] || {}), selected: i } }))
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -766,6 +1123,13 @@ export default function Practice() {
                   <div className="hidden lg:flex gap-3 mt-3">
                     {!revealed ? (
                       <>
+                        <button
+                          onClick={goBack}
+                          disabled={index === 0}
+                          className="w-10 h-10 flex items-center justify-center rounded-xl border border-outline-variant bg-surface-low text-on-variant hover:bg-outline-variant active:scale-[0.98] disabled:opacity-30 transition-all flex-shrink-0"
+                        >
+                          <Icon name="arrow_back" size={18} />
+                        </button>
                         <button
                           onClick={handleSkip}
                           className="bg-surface-low border border-outline-variant text-on-variant text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.98] transition-all"
@@ -781,13 +1145,23 @@ export default function Practice() {
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={advance}
-                        className="flex-1 flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-2.5 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
-                      >
-                        {isLastQ ? 'View Results' : 'Next Question'}
-                        <Icon name={isLastQ ? 'flag' : 'arrow_forward'} size={16} fill className="text-white" />
-                      </button>
+                      <div className="flex-1 flex gap-3">
+                        <button
+                          onClick={goBack}
+                          disabled={index === 0}
+                          className="flex items-center justify-center gap-1.5 bg-surface-low border border-outline-variant text-on text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.98] disabled:opacity-30 transition-all"
+                        >
+                          <Icon name="arrow_back" size={16} />
+                          Previous
+                        </button>
+                        <button
+                          onClick={advance}
+                          className="flex-1 flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-2.5 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
+                        >
+                          {isLastQ ? 'View Results' : 'Next Question'}
+                          <Icon name={isLastQ ? 'flag' : 'arrow_forward'} size={16} fill className="text-white" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </>
@@ -809,9 +1183,16 @@ export default function Practice() {
       {/* ── Sticky bottom bar — mobile only (objective questions) ────────── */}
       {objective && (
         <div className="lg:hidden flex-shrink-0 bg-surface-container border-t border-outline-variant px-4 py-3">
-          <div className="max-w-lg mx-auto flex gap-3">
+          <div className="max-w-lg mx-auto flex gap-2">
             {!revealed ? (
               <>
+                <button
+                  onClick={goBack}
+                  disabled={index === 0}
+                  className="w-11 h-11 flex items-center justify-center rounded-xl border border-outline-variant bg-surface-low text-on-variant hover:bg-outline-variant active:scale-[0.98] disabled:opacity-30 transition-all flex-shrink-0"
+                >
+                  <Icon name="arrow_back" size={18} />
+                </button>
                 <button
                   onClick={handleSkip}
                   className="bg-surface-low border border-outline-variant text-on-variant text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.98] transition-all flex-shrink-0"
@@ -827,13 +1208,23 @@ export default function Practice() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={advance}
-                className="flex-1 flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
-              >
-                {isLastQ ? 'View Results' : 'Next Question'}
-                <Icon name={isLastQ ? 'flag' : 'arrow_forward'} size={16} fill className="text-white" />
-              </button>
+              <>
+                <button
+                  onClick={goBack}
+                  disabled={index === 0}
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-surface-low border border-outline-variant text-on text-sm font-medium py-3 rounded-xl hover:bg-outline-variant active:scale-[0.98] disabled:opacity-30 transition-all"
+                >
+                  <Icon name="arrow_back" size={16} />
+                  Prev
+                </button>
+                <button
+                  onClick={advance}
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
+                >
+                  {isLastQ ? 'Finish' : 'Next'}
+                  <Icon name={isLastQ ? 'flag' : 'arrow_forward'} size={16} fill className="text-white" />
+                </button>
+              </>
             )}
           </div>
         </div>

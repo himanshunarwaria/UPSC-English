@@ -6,7 +6,7 @@ const tabs = [
   { to: '/pyqs', icon: 'history_edu', label: 'PYQs' },
   { to: '/revision', icon: 'replay', label: 'Revision' },
   { to: '/mistakes', icon: 'error', label: 'Mistakes' },
-  { to: '/analytics', icon: 'bar_chart', label: 'Analytics' },
+  { to: '/practice?mode=select', icon: 'quiz', label: 'Practice' },
 ]
 
 export default function BottomNav() {

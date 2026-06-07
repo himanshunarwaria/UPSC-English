@@ -78,6 +78,54 @@ import batch_010_p3 from './batch_010_mixed_advanced_grammar_part_03.js'
 import batch_010_p4 from './batch_010_mixed_advanced_grammar_part_04.js'
 import batch_010_p5 from './batch_010_mixed_advanced_grammar_part_05.js'
 
+// Gap-filling batches — previously orphaned, now activated
+import batch_gap_l1_foundational from './batch_level1_foundational_part_01.js'
+import batch_gap_l2_intermediate from './batch_level2_intermediate_part_01.js'
+import batch_gap_l5_vocabulary from './batch_level5_vocabulary_advancement.js'
+import batch_gap_l9_answerwriting from './batch_level9_answerwriting.js'
+import batch_gap_pronouns from './batch_pronouns_advanced.js'
+import batch_gap_sentenceimprovement from './batch_sentenceimprovement_advanced.js'
+import batch_gap_diindirect from './batch_diindirect_advanced.js'
+
+// Level 4 — Sentence Connectors (batch 011 parts 1–5, 100Q total)
+import batch_011_sentence_connectors from './batch_011_sentence_connectors_part_01.js'
+import batch_011_sentence_connectors_p2 from './batch_011_sentence_connectors_part_02.js'
+import batch_011_sentence_connectors_p3 from './batch_011_sentence_connectors_part_03.js'
+import batch_011_sentence_connectors_p4 from './batch_011_sentence_connectors_part_04.js'
+import batch_011_sentence_connectors_p5 from './batch_011_sentence_connectors_part_05.js'
+
+// Level 6 — Phrasal Verbs: Formal Replacements (batch 012 parts 1–5, 100Q total)
+import batch_012_phrasal_verbs from './batch_012_phrasal_verbs_part_01.js'
+import batch_012_phrasal_verbs_p2 from './batch_012_phrasal_verbs_part_02.js'
+import batch_012_phrasal_verbs_p3 from './batch_012_phrasal_verbs_part_03.js'
+import batch_012_phrasal_verbs_p4 from './batch_012_phrasal_verbs_part_04.js'
+import batch_012_phrasal_verbs_p5 from './batch_012_phrasal_verbs_part_05.js'
+
+// Level 8 — Academic Vocabulary (batch 013 parts 1–5, 100Q total — COMPLETE)
+import batch_013_academic_vocab from './batch_013_academic_vocabulary_part_01.js'
+import batch_013_academic_vocab_p2 from './batch_013_academic_vocabulary_part_02.js'
+import batch_013_academic_vocab_p3 from './batch_013_academic_vocabulary_part_03.js'
+import batch_013_academic_vocab_p4 from './batch_013_academic_vocabulary_part_04.js'
+import batch_013_academic_vocab_p5 from './batch_013_academic_vocabulary_part_05.js'
+
+// Level 5 — Vocabulary Expansion: Formal Word Replacement (batch 015 parts 1–5, 100Q total — COMPLETE)
+import batch_015_vocab_expansion from './batch_015_vocabulary_expansion_part_01.js'
+import batch_015_vocab_expansion_p2 from './batch_015_vocabulary_expansion_part_02.js'
+import batch_015_vocab_expansion_p3 from './batch_015_vocabulary_expansion_part_03.js'
+import batch_015_vocab_expansion_p4 from './batch_015_vocabulary_expansion_part_04.js'
+import batch_015_vocab_expansion_p5 from './batch_015_vocabulary_expansion_part_05.js'
+
+// Level 9 — UPSC Answer Writing (batch 014 parts 1–5, 100Q total)
+import batch_014_answer_writing from './batch_014_answer_writing_part_01.js'
+import batch_015_answer_writing from './batch_014_answer_writing_part_02.js'
+import batch_016_answer_writing from './batch_014_answer_writing_part_03.js'
+import batch_017_answer_writing from './batch_014_answer_writing_part_04.js'
+import batch_018_answer_writing from './batch_014_answer_writing_part_05.js'
+
+// Level 10 — Full UPSC English Test (batch 016 parts 1–2, 40Q total)
+import batch_016_full_mock from './batch_016_full_mock_part_01.js'
+import batch_016_full_mock_p2 from './batch_016_full_mock_part_02.js'
+
 // ── Combine all approved batches ──────────────────────────────────────────────
 
 const allBatches = [
@@ -131,6 +179,40 @@ const allBatches = [
   ...batch_010_p3,
   ...batch_010_p4,
   ...batch_010_p5,
+  ...batch_gap_l1_foundational,
+  ...batch_gap_l2_intermediate,
+  ...batch_gap_l5_vocabulary,
+  ...batch_gap_l9_answerwriting,
+  ...batch_gap_pronouns,
+  ...batch_gap_sentenceimprovement,
+  ...batch_gap_diindirect,
+  ...batch_011_sentence_connectors,
+  ...batch_011_sentence_connectors_p2,
+  ...batch_011_sentence_connectors_p3,
+  ...batch_011_sentence_connectors_p4,
+  ...batch_011_sentence_connectors_p5,
+  ...batch_012_phrasal_verbs,
+  ...batch_012_phrasal_verbs_p2,
+  ...batch_012_phrasal_verbs_p3,
+  ...batch_012_phrasal_verbs_p4,
+  ...batch_012_phrasal_verbs_p5,
+  ...batch_013_academic_vocab,
+  ...batch_013_academic_vocab_p2,
+  ...batch_013_academic_vocab_p3,
+  ...batch_013_academic_vocab_p4,
+  ...batch_013_academic_vocab_p5,
+  ...batch_015_vocab_expansion,
+  ...batch_015_vocab_expansion_p2,
+  ...batch_015_vocab_expansion_p3,
+  ...batch_015_vocab_expansion_p4,
+  ...batch_015_vocab_expansion_p5,
+  ...batch_014_answer_writing,
+  ...batch_015_answer_writing,
+  ...batch_016_answer_writing,
+  ...batch_017_answer_writing,
+  ...batch_018_answer_writing,
+  ...batch_016_full_mock,
+  ...batch_016_full_mock_p2,
 ]
 
 export const questionsFromBatches = allBatches

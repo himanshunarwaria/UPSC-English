@@ -174,6 +174,7 @@ export function saveQuestionAttempt(data) {
       subtopic,
       level,
       mistake_type,
+      selected_answer,
       explanation: `Answered ${selected_answer}, correct is ${correct_answer}`,
     })
   }
@@ -196,7 +197,7 @@ export function getAttemptsByLevel(userId, level) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function saveMistake(data) {
-  const { user_id, question_id, topic, subtopic, level, mistake_type, explanation } = data
+  const { user_id, question_id, topic, subtopic, level, mistake_type, explanation, selected_answer } = data
 
   if (!user_id || !question_id || !mistake_type) {
     console.error('Missing required fields: user_id, question_id, mistake_type')
@@ -220,6 +221,7 @@ export function saveMistake(data) {
     subtopic: subtopic || 'Unknown',
     level: level || 1,
     mistake_type,
+    selected_answer: selected_answer ?? null,
     explanation: explanation || '',
     status: 'pending', // pending, revised, mastered
     created_at: new Date().toISOString(),
@@ -581,7 +583,7 @@ export function getRecommendedTask(userId) {
       topic: weakArea.topic || 'Grammar',
       subtopic: weakArea.subtopic,
       ctaLabel: `Start ${weakArea.subtopic} Practice`,
-      ctaRoute: `/practice?mode=quick&topic=${encodeURIComponent(weakArea.subtopic)}`,
+      ctaRoute: `/practice?mode=focused&level=${currentLevel}&subtopic=${encodeURIComponent(weakArea.subtopic)}`,
     }
   }
 

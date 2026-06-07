@@ -121,10 +121,19 @@ export default function Today() {
         {/* Primary CTA — most prominent, above fold */}
         <button
           onClick={() => navigate('/practice?mode=quick&topic=all')}
-          className="w-full flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-4 rounded-xl mb-4 hover:opacity-90 active:scale-[0.99] transition-all"
+          className="w-full flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-4 rounded-xl mb-2 hover:opacity-90 active:scale-[0.99] transition-all"
         >
           <Icon name="bolt" size={20} fill className="text-white" />
           Start 15-Min Grammar Drill
+        </button>
+
+        {/* Secondary CTA — user-directed practice */}
+        <button
+          onClick={() => navigate('/practice?mode=select')}
+          className="w-full flex items-center justify-center gap-2 bg-surface-container border border-outline-variant text-on text-sm font-medium py-3 rounded-xl mb-4 hover:opacity-90 active:scale-[0.99] transition-all"
+        >
+          <Icon name="tune" size={18} className="text-on-variant" />
+          Choose Level / Topic
         </button>
 
         {/* Smart Recommendation Card — before stats for quick access */}
