@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../ui/Icon'
 import {
   getAvailableLevels,
@@ -10,163 +10,185 @@ import {
 
 export default function LevelSelector() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const levels = getAvailableLevels()
 
-  const [selLevel,    setSelLevel]    = useState(null)
-  const [selTopic,    setSelTopic]    = useState(null)
-  const [selSubtopic, setSelSubtopic] = useState(null)
+  const paramLevel    = params.get('level')    ? parseInt(params.get('level'), 10) : null
+  const paramTopic    = params.get('topic')    || null
+  const paramSubtopic = params.get('subtopic') || null
+  const [selLevel,    setSelLevel]    = useState(paramLevel)
+  const [selTopic,    setSelTopic]    = useState(paramTopic)
+  const [selSubtopic, setSelSubtopic] = useState(paramSubtopic)
 
-  const topics    = selLevel != null ? getTopicsForLevel(selLevel) : []
-  const subtopics = selLevel != null && selTopic != null
-    ? getSubtopicsForLevelAndTopic(selLevel, selTopic)
+  const topics = selLevel != null ? getTopicsForLevel(selLevel) : []
+
+  // Single-topic levels: auto-resolve without showing a selector
+  const singleTopic    = topics.length === 1 ? topics[0] : null
+  const effectiveTopic = singleTopic ?? selTopic
+
+  const subtopics = selLevel != null && effectiveTopic != null
+    ? getSubtopicsForLevelAndTopic(selLevel, effectiveTopic)
     : []
 
   const previewCount = filterQuestions({
-    ...(selLevel != null  && { level: selLevel }),
-    ...(selTopic != null  && { topic: selTopic }),
-    ...(selSubtopic != null && { subtopic: selSubtopic }),
+    ...(selLevel != null       && { level: selLevel }),
+    ...(effectiveTopic != null && { topic: effectiveTopic }),
+    ...(selSubtopic != null    && { subtopic: selSubtopic }),
   }).length
 
-  function handleLevelSelect(lv) {
-    if (selLevel === lv) { setSelLevel(null); setSelTopic(null); setSelSubtopic(null) }
-    else                 { setSelLevel(lv);   setSelTopic(null); setSelSubtopic(null) }
+  const needsTopic   = topics.length > 1 && effectiveTopic == null
+  const canStart     = selLevel != null && !needsTopic && previewCount > 0
+
+  const summaryLine = selLevel == null
+    ? 'Select a level to continue.'
+    : needsTopic
+      ? 'Select a topic to continue.'
+      : previewCount > 0
+        ? `${previewCount} questions`
+        : 'No questions for this selection.'
+
+  const detailLine = selLevel != null && !needsTopic
+    ? [
+        `Level ${selLevel}`,
+        effectiveTopic,
+        selSubtopic ?? (subtopics.length > 1 ? 'All subtopics' : null),
+      ].filter(Boolean).join(' · ')
+    : null
+
+  function handleLevelChange(e) {
+    const val = e.target.value
+    setSelTopic(null)
+    setSelSubtopic(null)
+    setSelLevel(val ? parseInt(val, 10) : null)
   }
 
-  function handleTopicSelect(tp) {
-    if (selTopic === tp) { setSelTopic(null); setSelSubtopic(null) }
-    else                 { setSelTopic(tp);   setSelSubtopic(null) }
+  function handleTopicChange(e) {
+    setSelSubtopic(null)
+    setSelTopic(e.target.value || null)
   }
 
   function start() {
-    if (selLevel == null) return
+    if (!canStart) return
     const p = new URLSearchParams({ mode: 'focused', level: String(selLevel) })
-    if (selTopic)    p.set('topic',    selTopic)
-    if (selSubtopic) p.set('subtopic', selSubtopic)
+    if (effectiveTopic) p.set('topic',    effectiveTopic)
+    if (selSubtopic)    p.set('subtopic', selSubtopic)
     navigate(`/practice?${p.toString()}`)
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
 
-      {/* Level cards */}
+      {/* 1. Level dropdown */}
       <div>
         <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">Choose Level</p>
-        <div className="space-y-1.5">
-          {levels.map(({ level: lv, title, difficultyLabel, shortDescription, questionCount }) => (
-            <button
-              key={lv}
-              onClick={() => handleLevelSelect(lv)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all active:scale-[0.99] ${
-                selLevel === lv
-                  ? 'bg-primary/10 border-primary text-on'
-                  : 'bg-surface-container border-outline-variant hover:border-primary/30'
-              }`}
-            >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm ${
-                selLevel === lv ? 'bg-primary text-white' : 'bg-surface-low text-on-variant border border-outline-variant'
-              }`}>
-                {lv}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <p className="text-sm font-semibold text-on truncate">{title}</p>
-                  <span className={`text-2xs font-medium flex-shrink-0 ${selLevel === lv ? 'text-primary' : 'text-on-dim'}`}>
-                    {difficultyLabel}
-                  </span>
-                </div>
-                <p className="text-2xs text-on-dim mt-0.5 truncate">{shortDescription}</p>
-              </div>
-              <span className="text-2xs text-on-dim flex-shrink-0 tabular-nums">{questionCount} Q</span>
-            </button>
-          ))}
+        <div className="relative">
+          <select
+            value={selLevel ?? ''}
+            onChange={handleLevelChange}
+            className="w-full appearance-none bg-surface-container border border-outline-variant rounded-xl px-4 py-3 pr-10 text-sm font-medium text-on focus:outline-none focus:border-primary transition-colors cursor-pointer"
+          >
+            <option value="">Select difficulty level</option>
+            {levels.map(({ level: lv, difficultyLabel, questionCount }) => (
+              <option key={lv} value={lv}>
+                Level {lv} — {difficultyLabel} — {questionCount} Q
+              </option>
+            ))}
+          </select>
+          <Icon name="expand_more" size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-dim pointer-events-none" />
         </div>
+        {selLevel === null && (
+          <p className="text-xs text-on-dim mt-2 text-center">
+            Not sure where to start?{' '}
+            <button
+              onClick={() => navigate('/level-test')}
+              className="text-primary font-medium hover:underline underline-offset-2"
+            >
+              Take a short level test
+            </button>
+          </p>
+        )}
       </div>
 
-      {/* Topic chips — appear after level selection */}
-      {topics.length > 0 && (
+      {/* 2. Topic — auto-pill (single) or dropdown (multiple) */}
+      {topics.length === 1 && (
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-xs font-medium text-on-dim uppercase tracking-widest">Topic:</span>
+          <span className="text-xs font-semibold text-on bg-surface-container border border-outline-variant rounded-full px-3 py-1">
+            {singleTopic}
+          </span>
+        </div>
+      )}
+
+      {topics.length > 1 && (
         <div>
           <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">Choose Topic</p>
-          <div className="flex flex-wrap gap-1.5">
-            {topics.map(tp => {
-              const count = filterQuestions({ level: selLevel, topic: tp }).length
-              return (
-                <button
-                  key={tp}
-                  onClick={() => count > 0 && handleTopicSelect(tp)}
-                  disabled={count === 0}
-                  className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all min-h-[44px] ${
-                    selTopic === tp
-                      ? 'bg-accent text-white border-accent'
-                      : count === 0
-                        ? 'bg-surface-low border-outline-variant text-on-dim opacity-40 cursor-not-allowed'
-                        : 'bg-surface-container border-outline-variant text-on-variant hover:border-accent/40'
-                  }`}
-                >
-                  {tp}
-                  <span className={`text-2xs tabular-nums ${selTopic === tp ? 'text-white/70' : 'text-on-dim'}`}>
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
+          <div className="relative">
+            <select
+              value={selTopic ?? ''}
+              onChange={handleTopicChange}
+              className="w-full appearance-none bg-surface-container border border-outline-variant rounded-xl px-4 py-3 pr-10 text-sm font-medium text-on focus:outline-none focus:border-primary transition-colors cursor-pointer"
+            >
+              <option value="">Select topic</option>
+              {topics.map(tp => {
+                const count = filterQuestions({ level: selLevel, topic: tp }).length
+                return (
+                  <option key={tp} value={tp} disabled={count === 0}>
+                    {tp} — {count} Q
+                  </option>
+                )
+              })}
+            </select>
+            <Icon name="expand_more" size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-dim pointer-events-none" />
           </div>
         </div>
       )}
 
-      {/* Subtopic chips — only when multiple options exist */}
+      {/* 3. Subtopic dropdown — only when multiple subtopics exist */}
       {subtopics.length > 1 && (
         <div>
           <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">
             Subtopic <span className="normal-case font-normal">(optional)</span>
           </p>
-          <div className="flex flex-wrap gap-1.5">
-            {subtopics.map(st => {
-              const count = filterQuestions({ level: selLevel, topic: selTopic, subtopic: st }).length
-              return (
-                <button
-                  key={st}
-                  onClick={() => count > 0 && setSelSubtopic(selSubtopic === st ? null : st)}
-                  disabled={count === 0}
-                  className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all min-h-[44px] ${
-                    selSubtopic === st
-                      ? 'bg-surface-container border-accent text-accent'
-                      : count === 0
-                        ? 'bg-surface-low border-outline-variant text-on-dim opacity-40 cursor-not-allowed'
-                        : 'bg-surface-container border-outline-variant text-on-variant hover:border-accent/40'
-                  }`}
-                >
-                  {st}
-                  <span className={`text-2xs tabular-nums ${selSubtopic === st ? 'text-accent/70' : 'text-on-dim'}`}>
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
+          <div className="relative">
+            <select
+              value={selSubtopic ?? ''}
+              onChange={e => setSelSubtopic(e.target.value || null)}
+              className="w-full appearance-none bg-surface-container border border-outline-variant rounded-xl px-4 py-3 pr-10 text-sm font-medium text-on focus:outline-none focus:border-primary transition-colors cursor-pointer"
+            >
+              <option value="">All subtopics — {previewCount} Q</option>
+              {subtopics.map(st => {
+                const count = filterQuestions({ level: selLevel, topic: effectiveTopic, subtopic: st }).length
+                return (
+                  <option key={st} value={st} disabled={count === 0}>
+                    {st} — {count} Q
+                  </option>
+                )
+              })}
+            </select>
+            <Icon name="expand_more" size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-dim pointer-events-none" />
           </div>
         </div>
       )}
 
-      {/* Preview + Start — appears when level is selected */}
-      {selLevel != null && (
-        <div className="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-on">
-              {previewCount > 0 ? `${previewCount} questions` : 'No questions for this selection'}
-            </p>
-            <p className="text-xs text-on-dim mt-0.5 truncate">
-              {[`Level ${selLevel}`, selTopic, selSubtopic].filter(Boolean).join(' · ')}
-            </p>
-          </div>
-          <button
-            onClick={start}
-            disabled={previewCount === 0}
-            className="flex-shrink-0 flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 active:scale-[0.99] disabled:opacity-40 transition-all min-h-[44px]"
-          >
-            Start
-            <Icon name="arrow_forward" size={16} fill className="text-white" />
-          </button>
+      {/* 4. Summary card + Start — always visible */}
+      <div className="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className={`text-sm font-semibold ${canStart ? 'text-on' : 'text-on-dim'}`}>
+            {summaryLine}
+          </p>
+          {detailLine && (
+            <p className="text-xs text-on-dim mt-0.5 truncate">{detailLine}</p>
+          )}
         </div>
-      )}
+        <button
+          onClick={start}
+          disabled={!canStart}
+          className="flex-shrink-0 flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 active:scale-[0.99] disabled:opacity-40 transition-all min-h-[44px]"
+        >
+          Start
+          <Icon name="arrow_forward" size={16} fill className="text-white" />
+        </button>
+      </div>
 
     </div>
   )

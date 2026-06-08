@@ -225,8 +225,8 @@ export default function Mistakes() {
       <main className="flex-1 safe-pb overflow-y-auto">
         <div className="max-w-lg mx-auto px-4">
           <div className="pt-5 pb-4">
-            <h1 className="font-display font-bold text-2xl text-on">Mistakes</h1>
-            <p className="text-sm text-on-variant mt-0.5">Your improvement map</p>
+            <h1 className="font-display font-bold text-2xl text-on">Your Mistakes</h1>
+            <p className="text-sm text-on-variant mt-0.5">Revise wrong answers and fix weak areas.</p>
           </div>
           <EmptyState
             icon="login"
@@ -246,9 +246,20 @@ export default function Mistakes() {
 
         {/* Header */}
         <div className="pt-5 pb-4">
-          <h1 className="font-display font-bold text-2xl text-on">Mistakes</h1>
-          <p className="text-sm text-on-variant mt-0.5">Your improvement map</p>
+          <h1 className="font-display font-bold text-2xl text-on">Your Mistakes</h1>
+          <p className="text-sm text-on-variant mt-0.5">Revise wrong answers and fix weak areas.</p>
         </div>
+
+        {/* Retry All CTA — only on Pending tab when mistakes exist */}
+        {activeTab === 'pending' && allMistakes.length > 0 && (
+          <button
+            onClick={() => navigate('/practice?mode=revision')}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] mb-4 transition-all"
+          >
+            <Icon name="replay" size={18} fill className="text-white" />
+            Retry All {allMistakes.length} Pending Mistake{allMistakes.length !== 1 ? 's' : ''}
+          </button>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4 overflow-x-auto">
@@ -281,7 +292,7 @@ export default function Mistakes() {
             }
             subtitle="No mistakes yet. Start practice to build your improvement map."
             ctaLabel="Start Practice"
-            onCta={() => navigate('/practice?mode=quick&topic=all')}
+            onCta={() => navigate('/')}
           />
         ) : (
           <div className="mb-6">

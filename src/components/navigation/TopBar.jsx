@@ -4,18 +4,18 @@ import { useAuth } from '../../contexts/AuthContext'
 import Icon from '../ui/Icon'
 
 const ROUTE_META = {
-  '/':               { title: "Today's Practice" },
-  '/grammar':        { title: 'Grammar Drill' },
-  '/practice':       { title: 'Active Practice' },
+  '/':               { title: 'Practice' },
+  '/grammar':        { title: 'Practice' },
+  '/practice':       { title: 'Practice' },
   '/level-test':     { title: 'Level Test' },
   '/pyqs':           { title: 'UPSC PYQs' },
-  '/revision':       { title: 'Revision Queue' },
-  '/mistakes':       { title: 'Mistake Review' },
-  '/vocabulary':     { title: 'Vocabulary Bank' },
+  '/revision':       { title: 'Mistakes' },
+  '/mistakes':       { title: 'Mistakes' },
+  '/vocabulary':     { title: 'Vocabulary' },
   '/connectors':     { title: 'Connector Practice' },
-  '/progress':       { title: 'Progress Report' },
+  '/progress':       { title: 'Progress' },
   '/sentence-builder': { title: 'Sentence Builder' },
-  '/analytics':      { title: 'Weakness Analytics' },
+  '/analytics':      { title: 'Practice Insights' },
 }
 
 function resolveTitle(pathname) {

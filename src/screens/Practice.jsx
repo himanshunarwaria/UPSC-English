@@ -164,7 +164,7 @@ function ExplanationBlock({ q, isCorrect }) {
         </span>
         {!isCorrect && (
           <span className="ml-auto text-2xs text-on-dim bg-surface-container border border-outline-variant rounded-full px-2 py-0.5 flex-shrink-0">
-            Added to Revision
+            Saved for review
           </span>
         )}
       </div>
@@ -192,7 +192,7 @@ function ExplanationBlock({ q, isCorrect }) {
 
 // ── ResultsScreen ───────────────────────────────────────────────────────────
 
-function ResultsScreen({ answers, onRetry, onDone, onReviseWrong }) {
+function ResultsScreen({ answers, onRetry, onDone, onReviseWrong, onContinue, continueLabel }) {
   const graded   = answers.filter(a => typeof a.isCorrect === 'boolean')
   const correct  = graded.filter(a => a.isCorrect).length
   const wrong    = graded.length - correct
@@ -239,6 +239,15 @@ function ResultsScreen({ answers, onRetry, onDone, onReviseWrong }) {
               Revise {wrong} Wrong Answer{wrong > 1 ? 's' : ''}
             </button>
           )}
+          {onContinue && (
+            <button
+              onClick={onContinue}
+              className="w-full flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
+            >
+              {continueLabel || 'Continue Practising'}
+              <Icon name="arrow_forward" size={16} fill className="text-white" />
+            </button>
+          )}
           <div className="flex gap-2">
             <button
               onClick={onRetry}
@@ -248,9 +257,9 @@ function ResultsScreen({ answers, onRetry, onDone, onReviseWrong }) {
             </button>
             <button
               onClick={onDone}
-              className="flex-1 bg-accent text-white text-sm font-medium py-2.5 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
+              className="flex-1 bg-surface-low border border-outline-variant text-on text-sm font-medium py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all"
             >
-              Done
+              Back to Home
             </button>
           </div>
         </div>
@@ -770,6 +779,16 @@ export default function Practice() {
     setTimedOut(false)
     setTimeLeft(timePerQ)
     setSessionAnswers({})
+    // Persist session so Home screen can offer "Continue where you left off"
+    if (mode === 'focused' && level != null) {
+      try {
+        localStorage.setItem('pure_english_last_session', JSON.stringify({
+          level,
+          topic: topic !== 'all' ? topic : null,
+          subtopic: subtopic || null,
+        }))
+      } catch {}
+    }
   }, [isSelectionMode, mode, topic, level, subtopic, revisionQueue, attempted, bookmarks, drillCount, timePerQ])
 
   // Runs when component mounts or when user transitions from selection → drill
@@ -980,7 +999,13 @@ export default function Practice() {
         answers={answers}
         onRetry={loadQuestions}
         onDone={() => navigate('/')}
-        onReviseWrong={() => navigate('/revision')}
+        onReviseWrong={() => navigate('/mistakes')}
+        onContinue={mode === 'focused' && level != null
+          ? () => navigate(`/practice?mode=focused&level=${level}${topic !== 'all' ? `&topic=${encodeURIComponent(topic)}` : ''}`)
+          : null}
+        continueLabel={mode === 'focused' && level != null
+          ? `More from Level ${level}`
+          : null}
       />
     )
   }

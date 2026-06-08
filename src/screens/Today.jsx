@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
 import Icon from '../components/ui/Icon'
@@ -6,12 +7,15 @@ import userTrackingService from '../services/userTrackingService'
 
 export default function Today() {
   const navigate = useNavigate()
+
+  const [lastSession] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pure_english_last_session') || 'null') } catch { return null }
+  })
   const { streak, revisionQueue, todayAttempted, todayCorrect } = useProgressContext()
 
-  const userId      = userTrackingService.getLoggedInUserId()
+  const userId       = userTrackingService.getLoggedInUserId()
   const userProgress = userId ? userTrackingService.getCurrentUserProgress(userId) : null
   const currentLevel = userProgress?.currentLevel ?? 1
-  const userAccuracy = userId ? userTrackingService.getUserAccuracy(userId) : 0
 
   const todayAccuracy = todayAttempted > 0
     ? Math.round((todayCorrect / todayAttempted) * 100)
@@ -32,9 +36,8 @@ export default function Today() {
         {/* Header */}
         <div className="pt-5 pb-4">
           <p className="text-2xs font-medium text-on-dim uppercase tracking-widest mb-1">{dateLabel}</p>
-          <h1 className="font-display font-bold text-2xl text-on leading-tight">
-            {todayAttempted === 0 ? 'Ready to practise?' : `${todayAttempted} done today.`}
-          </h1>
+          <h1 className="font-display font-bold text-2xl text-on leading-tight">Practice</h1>
+          <p className="text-sm text-on-variant mt-1">Choose your level, then select what you want to practise.</p>
         </div>
 
         {/* Compact stats strip */}
@@ -67,53 +70,52 @@ export default function Today() {
           </div>
         </div>
 
+        {/* Continue last session */}
+        {lastSession && (
+          <div className="mb-4 bg-surface-container border border-outline-variant rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-2xs font-medium text-on-dim uppercase tracking-widest mb-0.5">Continue</p>
+              <p className="text-sm font-semibold text-on truncate">
+                Level {lastSession.level}
+                {lastSession.topic ? ` · ${lastSession.topic}` : ''}
+                {lastSession.subtopic ? ` · ${lastSession.subtopic}` : ''}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const p = new URLSearchParams({ mode: 'focused', level: String(lastSession.level) })
+                if (lastSession.topic)    p.set('topic',    lastSession.topic)
+                if (lastSession.subtopic) p.set('subtopic', lastSession.subtopic)
+                navigate(`/practice?${p.toString()}`)
+              }}
+              className="flex-shrink-0 flex items-center gap-1.5 bg-surface-low border border-outline-variant text-on text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all min-h-[44px]"
+            >
+              Resume
+              <Icon name="arrow_forward" size={16} fill className="text-white" />
+            </button>
+          </div>
+        )}
+
         {/* Level selector — main practice entry */}
         <div className="mb-6">
           <LevelSelector />
         </div>
 
-        {/* Shortcuts */}
-        <div className="space-y-2 mb-8">
-          {revisionQueue.length > 0 && (
-            <button
-              onClick={() => navigate('/revision')}
-              className="w-full flex items-center gap-3 bg-error-dim border border-error/20 rounded-xl px-4 py-3 text-left hover:opacity-90 active:scale-[0.99] transition-all"
-            >
-              <Icon name="replay" size={18} fill className="text-error flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-error">
-                  {revisionQueue.length} wrong answer{revisionQueue.length > 1 ? 's' : ''} to revise
-                </p>
-                <p className="text-xs text-on-dim">Revise before they accumulate</p>
-              </div>
-              <Icon name="arrow_forward" size={16} className="text-error/60 flex-shrink-0" />
-            </button>
-          )}
-
+        {/* Secondary links */}
+        <div className="space-y-1 mb-8">
           <button
             onClick={() => navigate('/mistakes')}
-            className="w-full flex items-center gap-3 bg-surface-container border border-outline-variant rounded-xl px-4 py-3 text-left hover:opacity-90 active:scale-[0.99] transition-all"
+            className="w-full flex items-center justify-between px-1 py-2.5 text-sm text-on-variant hover:text-on active:opacity-70 transition-colors"
           >
-            <Icon name="error" size={18} fill className="text-on-variant flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-on">Mistake Review</p>
-              <p className="text-xs text-on-dim">Review what you got wrong</p>
-            </div>
-            <Icon name="arrow_forward" size={16} className="text-on-dim flex-shrink-0" />
+            <span>Revise Mistakes</span>
+            <Icon name="arrow_forward" size={14} className="text-on-dim" />
           </button>
-
           <button
             onClick={() => navigate('/progress')}
-            className="w-full flex items-center gap-3 bg-surface-container border border-outline-variant rounded-xl px-4 py-3 text-left hover:opacity-90 active:scale-[0.99] transition-all"
+            className="w-full flex items-center justify-between px-1 py-2.5 text-sm text-on-variant hover:text-on active:opacity-70 transition-colors"
           >
-            <Icon name="bar_chart" size={18} fill className="text-on-variant flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-on">Progress Report</p>
-              <p className="text-xs text-on-dim">
-                {userAccuracy > 0 ? `${userAccuracy}% overall accuracy` : 'Track your progress'}
-              </p>
-            </div>
-            <Icon name="arrow_forward" size={16} className="text-on-dim flex-shrink-0" />
+            <span>View Progress</span>
+            <Icon name="arrow_forward" size={14} className="text-on-dim" />
           </button>
         </div>
 

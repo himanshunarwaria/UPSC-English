@@ -57,11 +57,11 @@ function ResultsScreen({ answers, onDone }) {
   const accuracy = graded.length > 0 ? Math.round((correct / graded.length) * 100) : 0
 
   const color = accuracy >= 80 ? 'text-success' : accuracy >= 60 ? 'text-warn' : 'text-error'
-  const msg = accuracy >= 80 ? 'Excellent! Strong connector mastery.' : accuracy >= 60 ? 'Good progress! Review weak areas.' : 'Keep practicing connectors.'
+  const msg = accuracy >= 80 ? 'Excellent! Great work with connectors.' : accuracy >= 60 ? 'Good progress! Review the ones you missed.' : 'Keep practicing — connectors take repetition.'
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
-      <div className="max-w-lg mx-auto px-4 w-full pb-8">
+      <div className="max-w-lg mx-auto px-4 w-full safe-pb">
 
         <div className="pt-8 pb-4 text-center">
           <p className={`font-display font-bold text-5xl mb-1 ${color}`}>{accuracy}%</p>
@@ -96,7 +96,7 @@ function ResultsScreen({ answers, onDone }) {
             className="w-full flex items-center justify-center gap-2 bg-surface-low border border-outline-variant text-on text-sm font-medium py-3 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all"
           >
             <Icon name="home" size={18} fill />
-            Back to Dashboard
+            Back to Home
           </button>
         </div>
 
@@ -268,7 +268,7 @@ export default function ConnectorPractice() {
       </div>
 
       {/* Bottom action */}
-      <div className="flex-shrink-0 bg-surface-container border-t border-outline-variant px-4 py-3">
+      <div className="flex-shrink-0 bg-surface-container border-t border-outline-variant px-4 pt-3 pb-[56px]">
         <div className="max-w-lg mx-auto">
           {!revealed ? (
             <button

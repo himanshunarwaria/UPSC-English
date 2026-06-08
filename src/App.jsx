@@ -8,11 +8,9 @@ import ProtectedRoute from './components/routing/ProtectedRoute'
 import LevelAccessGuard from './components/routing/LevelAccessGuard'
 import Login from './screens/Login'
 import Today from './screens/Today'
-import Grammar from './screens/Grammar'
 import Practice from './screens/Practice'
 import PYQs from './screens/PYQs'
 import PYQYearDetail from './screens/PYQYearDetail'
-import Revision from './screens/Revision'
 import Mistakes from './screens/Mistakes'
 import LevelTest from './screens/LevelTest'
 import VocabularyBank from './screens/VocabularyBank'
@@ -39,7 +37,7 @@ function AppContent() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Today />} />
-          <Route path="/grammar" element={<Grammar />} />
+          <Route path="/grammar" element={<Navigate to="/" replace />} />
           <Route path="/pyqs" element={<PYQs />} />
           <Route path="/pyqs/:year" element={<PYQYearDetail />} />
           <Route path="/analytics" element={<Analytics />} />
@@ -47,7 +45,7 @@ function AppContent() {
           {/* Protected Routes — Requires Login */}
           <Route path="/practice" element={<ProtectedRoute element={<Practice />} />} />
           <Route path="/level-test" element={<ProtectedRoute element={<LevelTest />} />} />
-          <Route path="/revision" element={<ProtectedRoute element={<Revision />} />} />
+          <Route path="/revision" element={<Navigate to="/mistakes" replace />} />
           <Route path="/mistakes" element={<ProtectedRoute element={<Mistakes />} />} />
           <Route path="/vocabulary" element={<ProtectedRoute element={<VocabularyBank />} />} />
           <Route path="/connectors" element={<ProtectedRoute element={<ConnectorPractice />} />} />

@@ -1,3 +1,4 @@
+// DEPRECATED: This screen is no longer routed. /revision redirects to /mistakes.
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'

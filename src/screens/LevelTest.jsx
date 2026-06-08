@@ -4,7 +4,6 @@ import userTrackingService from '../services/userTrackingService'
 import { getAllQuestions } from '../data/questions/getQuestions'
 import { normalizeQuestion } from '../data/questions/metadataNormalizer'
 import { UPSC_LEVELS } from '../data/upscLevels'
-import Badge from '../components/ui/Badge'
 import Icon from '../components/ui/Icon'
 
 // ── Question selection for level ────────────────────────────────────────────
@@ -61,99 +60,67 @@ function OptionItem({ label, text, selected, revealed, isCorrect, onClick }) {
 
 // ── Test Results Screen ────────────────────────────────────────────────────
 
-function TestResultsScreen({ userId, level, answers, unlockedNextLevel, isStrong, recommendation, weakTopics, onDone }) {
+function TestResultsScreen({ level, answers, onDone }) {
   const graded = answers.filter(a => typeof a.isCorrect === 'boolean')
   const correct = graded.filter(a => a.isCorrect).length
   const wrong = graded.length - correct
   const accuracy = graded.length > 0 ? Math.round((correct / graded.length) * 100) : 0
 
-  const unlockMessage = unlockedNextLevel
-    ? isStrong
-      ? '🎯 Level Mastered!'
-      : '🔓 Next Level Unlocked!'
-    : '📖 Keep Practicing'
+  const recommendedLevel = accuracy >= 80
+    ? Math.min(Math.floor(level) + 1, 10)
+    : Math.floor(level)
 
-  const color = accuracy >= 90 ? 'text-success' : accuracy >= 80 ? 'text-primary' : accuracy >= 70 ? 'text-warn' : 'text-error'
+  const accColor = accuracy >= 80 ? 'text-success' : accuracy >= 60 ? 'text-warn' : 'text-error'
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
-      <div className="max-w-lg mx-auto px-4 w-full pb-8">
+      <div className="max-w-lg mx-auto px-4 w-full safe-pb">
 
-        {/* Score Card */}
-        <div className="pt-8 pb-4">
-          <div className="text-center">
-            <p className="text-2xs text-on-dim font-medium mb-2">{unlockMessage}</p>
-            <p className={`font-display font-bold text-5xl mb-2 ${color}`}>{accuracy}%</p>
-            <p className="text-sm text-on-variant">{recommendation}</p>
+        {/* Score */}
+        <div className="pt-8 pb-6 text-center">
+          <p className="text-2xs text-on-dim font-medium uppercase tracking-widest mb-3">Level Test Complete</p>
+          <p className={`font-display font-bold text-5xl mb-1 ${accColor}`}>{accuracy}%</p>
+          <p className="text-xs text-on-dim">{correct} of {graded.length} correct</p>
+        </div>
+
+        {/* Score breakdown */}
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="bg-surface-container border border-outline-variant rounded-xl p-3 text-center">
+            <p className="font-display font-bold text-xl text-success">{correct}</p>
+            <p className="text-2xs text-on-dim">Correct</p>
           </div>
-
-          <div className="grid grid-cols-3 gap-2 mt-6">
-            <div className="bg-surface-container border border-outline-variant rounded-xl p-3 text-center">
-              <p className="font-display font-bold text-xl text-success">{correct}</p>
-              <p className="text-2xs text-on-dim">Correct</p>
-            </div>
-            <div className="bg-surface-container border border-outline-variant rounded-xl p-3 text-center">
-              <p className="font-display font-bold text-xl text-error">{wrong}</p>
-              <p className="text-2xs text-on-dim">Wrong</p>
-            </div>
-            <div className="bg-surface-container border border-outline-variant rounded-xl p-3 text-center">
-              <p className="font-display font-bold text-xl text-on">{graded.length}</p>
-              <p className="text-2xs text-on-dim">Total</p>
-            </div>
+          <div className="bg-surface-container border border-outline-variant rounded-xl p-3 text-center">
+            <p className="font-display font-bold text-xl text-error">{wrong}</p>
+            <p className="text-2xs text-on-dim">Wrong</p>
+          </div>
+          <div className="bg-surface-container border border-outline-variant rounded-xl p-3 text-center">
+            <p className="font-display font-bold text-xl text-on">{graded.length}</p>
+            <p className="text-2xs text-on-dim">Total</p>
           </div>
         </div>
 
-        {/* Status Badges */}
-        <div className="flex flex-wrap gap-2 mb-4 justify-center">
-          {unlockedNextLevel && (
-            <Badge variant="success" size="xs">✓ Next Level Unlocked</Badge>
-          )}
-          {isStrong && (
-            <Badge variant="success" size="xs">⭐ Level Mastered</Badge>
-          )}
+        {/* Recommendation */}
+        <div className="mb-6 bg-surface-container border border-outline-variant rounded-xl px-4 py-4 text-center">
+          <p className="text-xs text-on-dim mb-1">Recommended starting level</p>
+          <p className="font-display font-bold text-2xl text-primary">Level {recommendedLevel}</p>
         </div>
 
-        {/* Weak Topics */}
-        {weakTopics && weakTopics.length > 0 && (
-          <div className="mb-4 p-4 bg-warn-dim border border-warn/20 rounded-xl">
-            <p className="text-xs font-semibold text-warn mb-2">Weak Areas to Review</p>
-            <div className="space-y-1">
-              {weakTopics.slice(0, 3).map((topic, i) => (
-                <p key={i} className="text-xs text-on-variant">
-                  • {topic.subtopic} ({topic.accuracy}%)
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Next Actions */}
+        {/* Actions */}
         <div className="flex flex-col gap-2">
-          {accuracy >= 80 && (
-            <button
-              onClick={() => onDone('next')}
-              className="w-full flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
-            >
-              <Icon name="arrow_forward" size={18} fill />
-              Start Level {Math.floor(level) + 1}
-            </button>
-          )}
           <button
-            onClick={() => onDone('dashboard')}
-            className="w-full flex items-center justify-center gap-2 bg-accent text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
+            onClick={() => onDone('start', recommendedLevel)}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
+          >
+            <Icon name="play_arrow" size={18} fill />
+            Start Level {recommendedLevel} Practice
+          </button>
+          <button
+            onClick={() => onDone('home')}
+            className="w-full flex items-center justify-center gap-2 bg-surface-low border border-outline-variant text-on text-sm font-medium py-3 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all"
           >
             <Icon name="home" size={18} fill />
-            Back to Dashboard
+            Back to Home
           </button>
-          {accuracy < 80 && (
-            <button
-              onClick={() => onDone('practice')}
-              className="w-full flex items-center justify-center gap-2 bg-surface-low border border-outline-variant text-on text-sm font-medium py-3 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all"
-            >
-              <Icon name="replay" size={18} fill />
-              Practice More
-            </button>
-          )}
         </div>
 
       </div>
@@ -260,7 +227,7 @@ export default function LevelTest() {
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <Icon name="hourglass_empty" size={40} className="text-on-dim mb-3" />
         <p className="text-sm font-semibold text-on mb-1">Loading Level Test</p>
-        <p className="text-xs text-on-variant text-center">Preparing Level {currentLevel} assessment...</p>
+        <p className="text-xs text-on-variant text-center">Preparing your Level {currentLevel} test...</p>
       </div>
     )
   }
@@ -269,16 +236,10 @@ export default function LevelTest() {
   if (done) {
     return (
       <TestResultsScreen
-        userId={userId}
         level={currentLevel}
         answers={answers}
-        unlockedNextLevel={testResult?.unlockedNextLevel}
-        isStrong={testResult?.isStrong}
-        recommendation={testResult?.recommendation}
-        weakTopics={testResult?.weakTopics}
-        onDone={(action) => {
-          if (action === 'next') navigate(`/practice?mode=quick&level=${currentLevel + 1}`)
-          else if (action === 'practice') navigate(`/practice?mode=quick&level=${currentLevel}`)
+        onDone={(action, level) => {
+          if (action === 'start') navigate(`/?level=${level}`)
           else navigate('/')
         }}
       />
@@ -348,7 +309,7 @@ export default function LevelTest() {
       </div>
 
       {/* Bottom action */}
-      <div className="flex-shrink-0 bg-surface-container border-t border-outline-variant px-4 py-3">
+      <div className="flex-shrink-0 bg-surface-container border-t border-outline-variant px-4 pt-3 pb-[56px]">
         <div className="max-w-lg mx-auto">
           {!revealed ? (
             <button
