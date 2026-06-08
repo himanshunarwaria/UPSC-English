@@ -928,16 +928,13 @@ export default function Practice() {
   function handleSkip() {
     const cur = questions[index]
     if (isObjective(cur)) {
-      recordAnswer(cur, -1)
-      saveAttemptToTracking(cur, -1, false)
+      // Skipped ≠ wrong. Keep the question open so the student can answer it on return.
+      // Do not call recordAnswer or saveAttemptToTracking — no tracking entry for a skip.
+      // Do not add to answers — skipped questions are not counted in results.
       setSessionAnswers(prev => ({
         ...prev,
-        [index]: { selected: -1, isCorrect: false, revealed: true, savedAttempt: true },
+        [index]: { selected: null, isCorrect: null, revealed: false, savedAttempt: false, skipped: true },
       }))
-      setAnswers(prev => {
-        if (prev.some(a => a.question.id === cur.id)) return prev
-        return [...prev, { question: cur, selected: -1, isCorrect: false }]
-      })
     } else {
       recordReview(cur, 'review')
       if (userId) {
