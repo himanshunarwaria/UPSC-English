@@ -80,6 +80,14 @@ import batch_010_p5 from './batch_010_mixed_advanced_grammar_part_05.js'
 
 // Gap-filling batches — previously orphaned, now activated
 import batch_gap_l1_foundational from './batch_level1_foundational_part_01.js'
+import batch_gap_l1_foundational_p2 from './batch_level1_foundational_part_02.js'
+import batch_gap_l1_foundational_p3 from './batch_level1_foundational_part_03.js'
+import batch_gap_l1_foundational_p4 from './batch_level1_foundational_part_04.js'
+import batch_gap_l1_foundational_p5 from './batch_level1_foundational_part_05.js'
+import batch_gap_l1_foundational_p6 from './batch_level1_foundational_part_06.js'
+import batch_gap_l1_foundational_p7 from './batch_level1_foundational_part_07.js'
+import batch_gap_l1_foundational_p8 from './batch_level1_foundational_part_08.js'
+import batch_gap_l1_foundational_p9 from './batch_level1_foundational_part_09.js'
 import batch_gap_l2_intermediate from './batch_level2_intermediate_part_01.js'
 import batch_gap_l5_vocabulary from './batch_level5_vocabulary_advancement.js'
 import batch_gap_l9_answerwriting from './batch_level9_answerwriting.js'
@@ -126,6 +134,12 @@ import batch_018_answer_writing from './batch_014_answer_writing_part_05.js'
 // Level 10 — Full UPSC English Test (batch 016 parts 1–2, 40Q total)
 import batch_016_full_mock from './batch_016_full_mock_part_01.js'
 import batch_016_full_mock_p2 from './batch_016_full_mock_part_02.js'
+
+// Level 4 — General Grammar (batch 017 part 1, 30Q)
+import batch_017_grammar_l4_p1 from './batch_017_grammar_level4_part_01.js'
+
+// Level 4 — General Grammar (batch 018 part 2, 20Q)
+import batch_018_grammar_l4_p2 from './batch_018_grammar_level4_part_02.js'
 
 // ── Combine all approved batches ──────────────────────────────────────────────
 
@@ -181,6 +195,14 @@ const allBatches = [
   ...batch_010_p4,
   ...batch_010_p5,
   ...batch_gap_l1_foundational,
+  ...batch_gap_l1_foundational_p2,
+  ...batch_gap_l1_foundational_p3,
+  ...batch_gap_l1_foundational_p4,
+  ...batch_gap_l1_foundational_p5,
+  ...batch_gap_l1_foundational_p6,
+  ...batch_gap_l1_foundational_p7,
+  ...batch_gap_l1_foundational_p8,
+  ...batch_gap_l1_foundational_p9,
   ...batch_gap_l2_intermediate,
   ...batch_gap_l5_vocabulary,
   ...batch_gap_l9_answerwriting,
@@ -215,6 +237,8 @@ const allBatches = [
   ...batch_018_answer_writing,
   ...batch_016_full_mock,
   ...batch_016_full_mock_p2,
+  ...batch_017_grammar_l4_p1,
+  ...batch_018_grammar_l4_p2,
 ]
 
 export const questionsFromBatches = allBatches
