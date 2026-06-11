@@ -141,6 +141,9 @@ import batch_017_grammar_l4_p1 from './batch_017_grammar_level4_part_01.js'
 // Level 4 — General Grammar (batch 018 part 2, 20Q)
 import batch_018_grammar_l4_p2 from './batch_018_grammar_level4_part_02.js'
 
+// Level 4 — General Grammar (batch 019 part 3, 30Q)
+import batch_019_grammar_l4_p3 from './batch_019_grammar_level4_part_03.js'
+
 // ── Combine all approved batches ──────────────────────────────────────────────
 
 const allBatches = [
@@ -239,6 +242,7 @@ const allBatches = [
   ...batch_016_full_mock_p2,
   ...batch_017_grammar_l4_p1,
   ...batch_018_grammar_l4_p2,
+  ...batch_019_grammar_l4_p3,
 ]
 
 export const questionsFromBatches = allBatches
