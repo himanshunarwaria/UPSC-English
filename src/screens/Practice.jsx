@@ -15,6 +15,7 @@ import Badge from '../components/ui/Badge'
 import Icon from '../components/ui/Icon'
 import userTrackingService from '../services/userTrackingService'
 import { normalizeQuestion } from '../data/questions/metadataNormalizer'
+import { filterPracticeQuestions } from '../services/practiceCatalogService'
 
 // ── Helpers (logic unchanged) ───────────────────────────────────────────────
 
@@ -76,10 +77,18 @@ function selectQuestions({ mode, topic, level, subtopic, params, revisionQueue, 
     if (topic !== 'all') pool = normalizedQ.filter(q => q.topic === topic)
     else pool = weakTopics.length > 0 ? normalizedQ.filter(q => weakTopics.includes(q.topic)) : normalizedQ
   } else {
-    // Default branch: quick, timed, focused — supports level + subtopic filtering
-    pool = topic === 'all' ? normalizedQ : normalizedQ.filter(q => q.topic === topic)
-    if (level != null)   pool = pool.filter(q => q.level === level)
-    if (subtopic != null) pool = pool.filter(q => q.subtopic === subtopic)
+    const skillId    = params.get('skill')
+    const subtopicId = params.get('subtopicId')
+    const difficulty = params.get('difficulty')
+    if (skillId) {
+      // Skill-first selector: use catalog filtering, limit:0 returns full unsliced pool
+      pool = filterPracticeQuestions({ skillId, subtopicId, difficultyGroup: difficulty, limit: 0 })
+    } else {
+      // Default branch: quick, timed, focused — supports level + subtopic filtering
+      pool = topic === 'all' ? normalizedQ : normalizedQ.filter(q => q.topic === topic)
+      if (level != null)    pool = pool.filter(q => q.level === level)
+      if (subtopic != null) pool = pool.filter(q => q.subtopic === subtopic)
+    }
   }
 
   const unattempted = pool.filter(q => !attempted[q.id])
@@ -190,53 +199,190 @@ function ExplanationBlock({ q, isCorrect }) {
   )
 }
 
+// ── ReviewCard ──────────────────────────────────────────────────────────────
+
+function ReviewCard({ question, selected, status, expanded, onToggle }) {
+  const userAnswerText =
+    selected != null && selected >= 0 && Array.isArray(question.options)
+      ? question.options[selected]
+      : null
+  const correctAnswerText =
+    Array.isArray(question.options) && question.correctAnswer != null
+      ? question.options[question.correctAnswer]
+      : null
+
+  const META = {
+    correct: { cls: 'text-success', icon: 'check_circle', label: 'Correct' },
+    wrong:   { cls: 'text-error',   icon: 'cancel',       label: 'Wrong'   },
+    skipped: { cls: 'text-on-dim',  icon: 'remove_circle', label: 'Skipped' },
+  }
+  const { cls, icon, label } = META[status] || META.skipped
+  const hasExpl = !!question.explanation
+
+  return (
+    <div className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden">
+      {/* Always-visible header — tap anywhere to toggle */}
+      <button
+        onClick={hasExpl ? onToggle : undefined}
+        className={`w-full text-left px-3 pt-3 pb-2.5 ${hasExpl ? 'active:bg-surface-low/50 transition-colors' : ''}`}
+      >
+        {/* Badges + status chip */}
+        <div className="flex items-start gap-1.5 mb-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+            <Badge variant="default" size="xs">{question.topic || 'Grammar'}</Badge>
+            {question.difficulty && (
+              <Badge
+                variant={question.difficulty === 'hard' ? 'error' : question.difficulty === 'medium' ? 'warn' : 'success'}
+                size="xs"
+              >
+                {question.difficulty}
+              </Badge>
+            )}
+          </div>
+          <span className={`flex-shrink-0 flex items-center gap-0.5 text-xs font-semibold ${cls}`}>
+            <Icon name={icon} size={12} fill className={cls} />
+            {label}
+          </span>
+        </div>
+
+        {/* Question text */}
+        <p className="text-sm text-on leading-relaxed whitespace-pre-line line-clamp-4 mb-2">
+          {question.question || question.questionText}
+        </p>
+
+        {/* Answer rows */}
+        {status !== 'skipped' && userAnswerText && (
+          <p className="text-xs text-error leading-relaxed mb-0.5">✗ {userAnswerText}</p>
+        )}
+        {status === 'skipped' && (
+          <p className="text-xs text-on-dim mb-0.5">— Not answered</p>
+        )}
+        {correctAnswerText && (
+          <p className="text-xs text-success leading-relaxed">✓ {correctAnswerText}</p>
+        )}
+      </button>
+
+      {/* Expand toggle — only if explanation exists */}
+      {hasExpl && (
+        <button
+          onClick={onToggle}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs text-on-variant hover:text-on border-t border-outline-variant/40 transition-colors min-h-[36px]"
+        >
+          <span className="font-medium">{expanded ? 'Hide explanation' : 'Show explanation'}</span>
+          <Icon name={expanded ? 'expand_less' : 'expand_more'} size={15} className="text-on-dim" />
+        </button>
+      )}
+
+      {/* Expanded explanation */}
+      {expanded && hasExpl && (
+        <div className="px-3 pb-3 border-t border-outline-variant/40 bg-surface-low/50">
+          <p className="text-xs text-on leading-relaxed pt-2.5">{question.explanation}</p>
+          {question.trap && (
+            <p className="text-xs text-warn mt-2 leading-relaxed border-t border-outline-variant/40 pt-2">
+              <span className="font-semibold">Trap: </span>{question.trap}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── ResultsScreen ───────────────────────────────────────────────────────────
 
-function ResultsScreen({ answers, onRetry, onDone, onReviseWrong, onContinue, continueLabel }) {
-  const graded   = answers.filter(a => typeof a.isCorrect === 'boolean')
-  const correct  = graded.filter(a => a.isCorrect).length
-  const wrong    = graded.length - correct
-  const reviewed = answers.length - graded.length
-  const accuracy = graded.length > 0 ? Math.round((correct / graded.length) * 100) : null
+function ResultsScreen({ answers, skippedItems, sessionTotal, onRetry, onDone, onReviseWrong, onContinue, continueLabel }) {
+  const graded        = answers.filter(a => typeof a.isCorrect === 'boolean')
+  const correctItems  = graded.filter(a => a.isCorrect)
+  // Wrong: user selected something but it was incorrect (selected >= 0)
+  const wrongItems    = graded.filter(a => !a.isCorrect && a.selected != null && a.selected >= 0)
+  // Timed-out: revealed with no selection (selected = -1) — treated as skipped
+  const timedOutItems = graded.filter(a => !a.isCorrect && (a.selected == null || a.selected < 0))
+  const allSkipped    = [
+    ...timedOutItems.map(a => ({ question: a.question, selected: null })),
+    ...(skippedItems || []),
+  ]
+
+  const correct  = correctItems.length
+  const wrong    = wrongItems.length
+  const skipped  = allSkipped.length
+  const total    = sessionTotal ?? (correct + wrong + skipped)
+  // Accuracy: only over graded where user actually answered
+  const gradedAnswered = correct + wrong
+  const accuracy = gradedAnswered > 0 ? Math.round((correct / gradedAnswered) * 100) : null
 
   const color = accuracy === null ? 'text-accent'
     : accuracy >= 70 ? 'text-success' : accuracy >= 50 ? 'text-warn' : 'text-error'
   const msg = accuracy === null
-    ? `${reviewed} question${reviewed !== 1 ? 's' : ''} reviewed`
+    ? `${total} question${total !== 1 ? 's' : ''} reviewed`
     : accuracy >= 80 ? 'Strong performance.' : accuracy >= 60 ? 'Review the mistakes below.' : 'Focus on weak areas.'
+
+  // Default tab: wrong → skipped → correct
+  const defaultTab = wrong > 0 ? 'wrong' : skipped > 0 ? 'skipped' : 'correct'
+  const [activeTab,  setActiveTab]  = useState(defaultTab)
+  const [expandedId, setExpandedId] = useState(null)
+
+  function toggleExpand(id) {
+    setExpandedId(prev => prev === id ? null : id)
+  }
+
+  const tabs = [
+    { key: 'correct', label: 'Correct', count: correct },
+    { key: 'wrong',   label: 'Wrong',   count: wrong   },
+    { key: 'skipped', label: 'Skipped', count: skipped },
+  ]
+
+  const emptyMsg = {
+    correct: 'No correct answers in this session.',
+    wrong:   'No wrong answers in this session.',
+    skipped: 'No skipped questions in this session.',
+  }
+
+  const tabCards = {
+    correct: correctItems.map(a => ({ question: a.question, selected: a.selected, status: 'correct' })),
+    wrong:   wrongItems.map(a   => ({ question: a.question, selected: a.selected, status: 'wrong'   })),
+    skipped: allSkipped.map(item => ({ question: item.question, selected: null,   status: 'skipped' })),
+  }
+
+  // Revise button shows all graded-wrong from this session (includes timed-out,
+  // since they are recorded as wrong in progress tracking via recordAnswer)
+  const totalWrongForRevise = graded.filter(a => !a.isCorrect).length
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
       <div className="max-w-lg mx-auto px-4 w-full pb-8">
 
+        {/* Score */}
         <div className="pt-8 pb-4 text-center">
           <p className={`font-display font-bold text-5xl mb-1 ${color}`}>
-            {accuracy !== null ? `${accuracy}%` : reviewed}
+            {accuracy !== null ? `${accuracy}%` : total}
           </p>
           <p className="text-sm text-on-variant">{msg}</p>
         </div>
 
-        <div className="flex gap-2 mb-4">
+        {/* Stats — 4 boxes */}
+        <div className="grid grid-cols-4 gap-1.5 mb-4">
           {[
-            { label: 'Correct',  value: correct,  cls: 'text-success' },
-            { label: 'Wrong',    value: wrong,    cls: 'text-error' },
-            { label: reviewed > 0 ? 'Reviewed' : 'Total', value: reviewed > 0 ? reviewed : answers.length, cls: 'text-on' },
+            { label: 'Correct', value: correct, cls: 'text-success' },
+            { label: 'Wrong',   value: wrong,   cls: 'text-error'   },
+            { label: 'Skipped', value: skipped, cls: 'text-on-dim'  },
+            { label: 'Total',   value: total,   cls: 'text-on'      },
           ].map(({ label, value, cls }) => (
-            <div key={label} className="flex-1 bg-surface-container border border-outline-variant rounded-xl p-3 text-center">
+            <div key={label} className="bg-surface-container border border-outline-variant rounded-xl p-2.5 text-center">
               <p className={`font-display font-bold text-xl ${cls}`}>{value}</p>
               <p className="text-2xs text-on-dim">{label}</p>
             </div>
           ))}
         </div>
 
+        {/* CTAs */}
         <div className="flex flex-col gap-2 mb-5">
-          {wrong > 0 && (
+          {totalWrongForRevise > 0 && (
             <button
               onClick={onReviseWrong}
               className="w-full flex items-center justify-center gap-2 bg-error-dim border border-error/20 text-error text-sm font-semibold py-3 rounded-xl hover:opacity-90 active:scale-[0.99] transition-all"
             >
               <Icon name="replay" size={18} fill className="text-error" />
-              Revise {wrong} Wrong Answer{wrong > 1 ? 's' : ''}
+              Revise {totalWrongForRevise} Wrong Answer{totalWrongForRevise > 1 ? 's' : ''}
             </button>
           )}
           {onContinue && (
@@ -249,69 +395,55 @@ function ResultsScreen({ answers, onRetry, onDone, onReviseWrong, onContinue, co
             </button>
           )}
           <div className="flex gap-2">
-            <button
-              onClick={onRetry}
-              className="flex-1 bg-surface-low border border-outline-variant text-on text-sm font-medium py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all"
-            >
+            <button onClick={onRetry} className="flex-1 bg-surface-low border border-outline-variant text-on text-sm font-medium py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all">
               Retry
             </button>
-            <button
-              onClick={onDone}
-              className="flex-1 bg-surface-low border border-outline-variant text-on text-sm font-medium py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all"
-            >
+            <button onClick={onDone} className="flex-1 bg-surface-low border border-outline-variant text-on text-sm font-medium py-2.5 rounded-xl hover:bg-outline-variant active:scale-[0.99] transition-all">
               Back to Home
             </button>
           </div>
         </div>
 
-        {wrong > 0 && (
-          <div className="mb-4">
-            <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">Mistakes</p>
-            <div className="space-y-2.5">
-              {graded.filter(a => !a.isCorrect).map(({ question, selected }) => (
-                <div key={question.id} className="bg-surface-container border border-outline-variant rounded-xl p-3">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <Badge variant="default" size="xs">{question.topic}</Badge>
-                    {question.difficulty && (
-                      <Badge variant={question.difficulty === 'hard' ? 'error' : question.difficulty === 'medium' ? 'warn' : 'success'} size="xs">
-                        {question.difficulty}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-on leading-relaxed mb-2 whitespace-pre-line line-clamp-3">
-                    {question.question || question.questionText}
-                  </p>
-                  <p className="text-xs text-error mb-0.5">✗ {selected >= 0 ? question.options[selected] : 'Skipped'}</p>
-                  <p className="text-xs text-success mb-1.5">✓ {question.options[question.correctAnswer]}</p>
-                  {question.explanation && (
-                    <p className="text-xs text-on-variant leading-relaxed">{question.explanation}</p>
-                  )}
-                  {question.trap && (
-                    <p className="text-xs text-warn mt-1 leading-relaxed">
-                      <span className="font-medium">Trap: </span>{question.trap}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Review Answers */}
+        <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">Review Answers</p>
 
-        {answers.some(a => a.isCorrect === null && a.selfRating === 'review') && (
-          <div className="mb-4">
-            <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">Flagged for Review</p>
-            <div className="space-y-2">
-              {answers.filter(a => a.isCorrect === null && a.selfRating === 'review').map(({ question }) => (
-                <div key={question.id} className="bg-surface-container border border-outline-variant rounded-xl p-3">
-                  <Badge variant="default" size="xs">{question.topic}</Badge>
-                  <p className="text-sm text-on leading-relaxed mt-1.5 line-clamp-2">
-                    {(question.questionText || question.question)?.split('\n')[0]}
-                  </p>
-                </div>
-              ))}
+        {/* Tab row */}
+        <div className="flex gap-1 mb-3 p-1 bg-surface-low rounded-xl border border-outline-variant">
+          {tabs.map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => { setActiveTab(key); setExpandedId(null) }}
+              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
+                activeTab === key ? 'bg-primary text-white' : 'text-on-variant hover:text-on'
+              }`}
+            >
+              {label}
+              <span className={`text-2xs font-bold tabular-nums ${activeTab === key ? 'text-white/80' : 'text-on-dim'}`}>
+                {count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Cards for active tab */}
+        <div className="space-y-2">
+          {tabCards[activeTab].length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-on-dim">{emptyMsg[activeTab]}</p>
             </div>
-          </div>
-        )}
+          ) : (
+            tabCards[activeTab].map(({ question, selected, status }) => (
+              <ReviewCard
+                key={question.id}
+                question={question}
+                selected={selected}
+                status={status}
+                expanded={expandedId === question.id}
+                onToggle={() => toggleExpand(question.id)}
+              />
+            ))
+          )}
+        </div>
 
       </div>
     </div>
@@ -739,9 +871,10 @@ export default function Practice() {
   const level    = params.get('level') ? parseInt(params.get('level'), 10) : null
   const subtopic = params.get('subtopic') || null
 
-  // If level/subtopic params are given with no explicit mode, treat as focused drill.
+  // If level/subtopic/skill params are given with no explicit mode, treat as focused drill.
   // Otherwise show the selection UI for unrecognised or missing mode values.
-  const resolvedMode    = rawMode || (level != null || subtopic != null ? 'focused' : null)
+  const skillParam      = params.get('skill') || null
+  const resolvedMode    = rawMode || (level != null || subtopic != null || skillParam != null ? 'focused' : null)
   const DRILL_MODES     = new Set(['quick', 'timed', 'weakness', 'pyq', 'revision', 'focused'])
   const isSelectionMode = !resolvedMode || !DRILL_MODES.has(resolvedMode)
   const mode            = isSelectionMode ? 'quick' : resolvedMode  // 'quick' never used in selection path
@@ -991,9 +1124,15 @@ export default function Practice() {
 
   // ── Results ────────────────────────────────────────────────────────────────
   if (done) {
+    const explicitSkips = questions
+      .filter((q, i) => sessionAnswers[i]?.skipped === true)
+      .map(q => ({ question: q }))
+
     return (
       <ResultsScreen
         answers={answers}
+        skippedItems={explicitSkips}
+        sessionTotal={questions.length}
         onRetry={loadQuestions}
         onDone={() => navigate('/')}
         onReviseWrong={() => navigate('/mistakes')}

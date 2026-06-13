@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgressContext } from '../hooks/useProgressContext'
 import Icon from '../components/ui/Icon'
-import LevelSelector from '../components/practice/LevelSelector'
+import SkillSelector from '../components/practice/SkillSelector'
 import userTrackingService from '../services/userTrackingService'
 
 export default function Today() {
@@ -37,7 +37,7 @@ export default function Today() {
         <div className="pt-5 pb-4">
           <p className="text-2xs font-medium text-on-dim uppercase tracking-widest mb-1">{dateLabel}</p>
           <h1 className="font-display font-bold text-2xl text-on leading-tight">Practice</h1>
-          <p className="text-sm text-on-variant mt-1">Choose your level, then select what you want to practise.</p>
+          <p className="text-sm text-on-variant mt-1">Choose a skill, then pick subtopic and difficulty.</p>
         </div>
 
         {/* Compact stats strip */}
@@ -98,7 +98,7 @@ export default function Today() {
 
         {/* Level selector — main practice entry */}
         <div className="mb-6">
-          <LevelSelector />
+          <SkillSelector />
         </div>
 
         {/* Secondary links */}

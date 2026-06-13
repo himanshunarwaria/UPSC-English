@@ -13,15 +13,29 @@ const qMap = Object.fromEntries(
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
-function timeAgo(timestamp) {
+function formatMistakeDate(timestamp) {
   if (!timestamp) return null
-  const days = Math.floor((Date.now() - new Date(timestamp).getTime()) / 86400000)
-  if (days === 0) return 'Today'
+  const date = new Date(timestamp)
+  const now = new Date()
+  const days = Math.floor((now - date) / 86400000)
+  if (days === 0) {
+    const time = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+    return `Today, ${time}`
+  }
   if (days === 1) return 'Yesterday'
-  if (days < 7)  return `${days}d ago`
-  const wk = Math.floor(days / 7)
-  if (wk < 5)    return `${wk}w ago`
-  return `${Math.floor(days / 30)}mo ago`
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function bucketByDate(mistakes) {
+  const now = Date.now()
+  const buckets = { today: [], yesterday: [], earlier: [] }
+  for (const m of mistakes) {
+    const days = m.created_at ? Math.floor((now - new Date(m.created_at).getTime()) / 86400000) : 999
+    if (days === 0)      buckets.today.push(m)
+    else if (days === 1) buckets.yesterday.push(m)
+    else                 buckets.earlier.push(m)
+  }
+  return buckets
 }
 
 function statusColor(status) {
@@ -35,13 +49,31 @@ function statusLabel(status) {
   return status?.charAt(0).toUpperCase() + status?.slice(1) || 'Unknown'
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const TABS = [
   { key: 'pending',  label: 'Pending',  icon: 'clock' },
   { key: 'revised',  label: 'Revised',  icon: 'done' },
   { key: 'mastered', label: 'Mastered', icon: 'check_circle' },
 ]
+
+const EMPTY_STATES = {
+  pending: {
+    icon: 'check_circle',
+    title: 'No pending mistakes',
+    subtitle: 'No pending mistakes. Great work — review mastered mistakes or continue practice.',
+  },
+  revised: {
+    icon: 'auto_stories',
+    title: 'No revised mistakes yet',
+    subtitle: 'No revised mistakes yet. Mark a mistake as revised after reviewing it.',
+  },
+  mastered: {
+    icon: 'celebration',
+    title: 'No mastered mistakes yet',
+    subtitle: 'No mastered mistakes yet. Master mistakes after repeated correct practice.',
+  },
+}
 
 // ── EmptyState ────────────────────────────────────────────────────────────────
 
@@ -71,22 +103,28 @@ function EmptyState({ icon, title, subtitle, ctaLabel, ctaVariant = 'primary', o
 
 // ── MistakeCard ───────────────────────────────────────────────────────────────
 
-function MistakeCard({ mistake, onStatusChange }) {
+function MistakeCard({ mistake, onStatusChange, navigate }) {
+  const [expanded, setExpanded] = useState(false)
   const q = qMap[mistake.question_id]
   if (!q) return null
 
-  const preview = (q.question || q.questionText || '').split('\n')[0].substring(0, 100)
+  const preview = (q.question || q.questionText || '').split('\n')[0].substring(0, 120)
+  const hasDetail = !!(q.explanation || q.trap || mistake.mistake_type)
 
   return (
-    <div className="bg-surface-container border border-outline-variant rounded-xl p-4 mb-3">
-      {/* Header with status and meta */}
-      <div className="flex items-start justify-between mb-3 gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-2">
+    <div className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden mb-3">
+      {/* Always-visible card body — tappable to expand */}
+      <button
+        onClick={() => hasDetail && setExpanded(e => !e)}
+        className={`w-full text-left p-4 ${hasDetail ? 'active:bg-surface-low/50 transition-colors' : ''}`}
+      >
+        {/* Badges + status chip */}
+        <div className="flex items-start gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
             {mistake.topic && (
               <Badge variant="default" size="xs">{mistake.topic}</Badge>
             )}
-            {mistake.subtopic && (
+            {mistake.subtopic && mistake.subtopic !== mistake.topic && (
               <Badge variant="default" size="xs">{mistake.subtopic}</Badge>
             )}
             {mistake.level && (
@@ -96,130 +134,187 @@ function MistakeCard({ mistake, onStatusChange }) {
               <Badge variant="warn" size="xs">{mistake.mistake_type}</Badge>
             )}
           </div>
-          <p className="text-2xs text-on-dim">{timeAgo(mistake.created_at)}</p>
+          <span className={`text-xs font-semibold flex-shrink-0 ${statusColor(mistake.status)}`}>
+            {statusLabel(mistake.status)}
+          </span>
         </div>
-        <span className={`text-xs font-semibold flex-shrink-0 ${statusColor(mistake.status)}`}>
-          {statusLabel(mistake.status)}
-        </span>
-      </div>
 
-      {/* Question preview */}
-      <div className="mb-3 p-3 bg-surface-low border border-outline-variant rounded-lg">
-        <p className="text-sm text-on leading-relaxed line-clamp-2">{preview}</p>
-        {preview.length === 100 && (
-          <p className="text-2xs text-on-dim mt-1">…</p>
-        )}
-      </div>
+        {/* Date */}
+        <p className="text-2xs text-on-dim mb-2.5">{formatMistakeDate(mistake.created_at)}</p>
 
-      {/* User answer vs correct answer */}
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="p-2 bg-error-dim border border-error/20 rounded-lg">
-          <p className="text-2xs text-on-dim font-medium mb-0.5">Your Answer</p>
-          <p className="text-sm text-error font-semibold">
-            {q.options && Array.isArray(q.options)
-              ? q.options[mistake.selected_answer] || 'Skipped'
-              : 'Not available'}
-          </p>
+        {/* Question preview */}
+        <p className="text-sm text-on leading-relaxed line-clamp-3 mb-3">{preview}</p>
+
+        {/* Your answer / Correct answer */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-2 bg-error-dim border border-error/20 rounded-lg min-w-0">
+            <p className="text-2xs text-on-dim font-medium mb-0.5">Your Answer</p>
+            <p className="text-xs text-error font-semibold leading-snug break-words">
+              {q.options && Array.isArray(q.options)
+                ? q.options[mistake.selected_answer] || 'Skipped'
+                : 'Not available'}
+            </p>
+          </div>
+          <div className="p-2 bg-success-dim border border-success/20 rounded-lg min-w-0">
+            <p className="text-2xs text-on-dim font-medium mb-0.5">Correct Answer</p>
+            <p className="text-xs text-success font-semibold leading-snug break-words">
+              {q.options && Array.isArray(q.options)
+                ? q.options[q.correctAnswer] || 'Not available'
+                : 'Not available'}
+            </p>
+          </div>
         </div>
-        <div className="p-2 bg-success-dim border border-success/20 rounded-lg">
-          <p className="text-2xs text-on-dim font-medium mb-0.5">Correct Answer</p>
-          <p className="text-sm text-success font-semibold">
-            {q.options && Array.isArray(q.options)
-              ? q.options[q.correctAnswer] || 'Not available'
-              : 'Not available'}
-          </p>
-        </div>
-      </div>
+      </button>
 
-      {/* Explanation */}
-      {q.explanation && (
-        <div className="mb-3 p-3 bg-surface-low border border-outline-variant rounded-lg">
-          <p className="text-2xs text-on-dim font-medium mb-1">Explanation</p>
-          <p className="text-sm text-on-variant leading-relaxed">{q.explanation}</p>
-        </div>
-      )}
-
-      {/* Trap/Note */}
-      {q.trap && (
-        <div className="mb-3 p-3 bg-warn-dim border border-warn/20 rounded-lg">
-          <p className="text-2xs text-on-dim font-medium mb-1">Note</p>
-          <p className="text-sm text-on-variant leading-relaxed">{q.trap}</p>
-        </div>
-      )}
-
-      {/* Quick practice button */}
-      {mistake.subtopic && (
+      {/* Expand toggle — only when there is detail to show */}
+      {hasDetail && (
         <button
-          onClick={() => window.location.href = `/practice?mode=focused&subtopic=${encodeURIComponent(mistake.subtopic)}`}
-          className="w-full mb-3 flex items-center justify-center gap-1.5 bg-primary/10 border border-primary/30 text-primary text-xs font-semibold py-2.5 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all"
+          onClick={() => setExpanded(e => !e)}
+          className="w-full flex items-center justify-between px-4 py-2 text-xs text-on-variant hover:text-on border-t border-outline-variant/40 transition-colors min-h-[36px]"
         >
-          <Icon name="play_arrow" size={14} fill className="text-primary" />
-          Practice more on {mistake.subtopic}
+          <span className="font-medium">{expanded ? 'Hide explanation' : 'Show explanation'}</span>
+          <Icon name={expanded ? 'expand_less' : 'expand_more'} size={15} className="text-on-dim" />
         </button>
       )}
 
-      {/* Status transition buttons */}
-      <div className="flex gap-2">
-        {mistake.status === 'pending' && (
-          <>
-            <button
-              onClick={() => onStatusChange(mistake.id, 'revised')}
-              className="flex-1 bg-warn-dim border border-warn/20 text-warn text-xs font-semibold py-2 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all"
-            >
-              Mark Revised
-            </button>
+      {/* Expanded area — explanation, trap, mistake type */}
+      {expanded && (
+        <div className="px-4 pb-4 border-t border-outline-variant/40 bg-surface-low/50">
+          {q.explanation && (
+            <div className="pt-3">
+              <p className="text-2xs text-on-dim font-medium mb-1">Explanation</p>
+              <p className="text-sm text-on-variant leading-relaxed">{q.explanation}</p>
+            </div>
+          )}
+          {q.trap && (
+            <div className="mt-3 p-3 bg-warn-dim border border-warn/20 rounded-lg">
+              <p className="text-2xs text-on-dim font-medium mb-1">Trap / Common confusion</p>
+              <p className="text-sm text-on-variant leading-relaxed">{q.trap}</p>
+            </div>
+          )}
+          {mistake.mistake_type && (
+            <p className="text-2xs text-on-dim mt-3">
+              Mistake type: <span className="text-warn font-medium">{mistake.mistake_type}</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="px-4 pb-4">
+        {/* Practice Similar */}
+        {mistake.subtopic && (
+          <button
+            onClick={() => navigate(`/practice?mode=focused&subtopic=${encodeURIComponent(mistake.subtopic)}`)}
+            className="w-full flex items-center justify-center gap-1.5 bg-primary/10 border border-primary/30 text-primary text-xs font-semibold py-2.5 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all mb-2"
+          >
+            <Icon name="play_arrow" size={14} fill className="text-primary" />
+            Practice more on {mistake.subtopic}
+          </button>
+        )}
+
+        {/* Status transition buttons */}
+        <div className="flex gap-2">
+          {mistake.status === 'pending' && (
+            <>
+              <button
+                onClick={() => onStatusChange(mistake.id, 'revised')}
+                className="flex-1 bg-warn-dim border border-warn/20 text-warn text-xs font-semibold py-2 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all"
+              >
+                Mark Revised
+              </button>
+              <button
+                onClick={() => onStatusChange(mistake.id, 'mastered')}
+                className="flex-1 bg-success-dim border border-success/20 text-success text-xs font-semibold py-2 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all"
+              >
+                Got It
+              </button>
+            </>
+          )}
+          {mistake.status === 'revised' && (
             <button
               onClick={() => onStatusChange(mistake.id, 'mastered')}
               className="flex-1 bg-success-dim border border-success/20 text-success text-xs font-semibold py-2 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all"
             >
-              Got It
+              Mark Mastered
             </button>
-          </>
-        )}
-        {mistake.status === 'revised' && (
-          <button
-            onClick={() => onStatusChange(mistake.id, 'mastered')}
-            className="flex-1 bg-success-dim border border-success/20 text-success text-xs font-semibold py-2 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all"
-          >
-            Mark Mastered
-          </button>
-        )}
-        {mistake.status === 'mastered' && (
-          <button
-            onClick={() => onStatusChange(mistake.id, 'pending')}
-            className="flex-1 bg-surface-low border border-outline-variant text-on-variant text-xs font-medium py-2 rounded-lg hover:bg-outline-variant active:scale-[0.98] transition-all"
-          >
-            Back to Review
-          </button>
-        )}
+          )}
+          {mistake.status === 'mastered' && (
+            <button
+              onClick={() => onStatusChange(mistake.id, 'pending')}
+              className="flex-1 bg-surface-low border border-outline-variant text-on-variant text-xs font-medium py-2 rounded-lg hover:bg-outline-variant active:scale-[0.98] transition-all"
+            >
+              Back to Review
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-// ── Main Mistakes screen ────────────────────────────────────────────────────────
+// ── DateGroup ─────────────────────────────────────────────────────────────────
+
+function DateGroup({ label, mistakes, onStatusChange, navigate }) {
+  if (mistakes.length === 0) return null
+  return (
+    <div className="mb-1">
+      <p className="text-xs font-medium text-on-dim uppercase tracking-widest mb-2">{label}</p>
+      {mistakes.map(m => (
+        <MistakeCard key={m.id} mistake={m} onStatusChange={onStatusChange} navigate={navigate} />
+      ))}
+    </div>
+  )
+}
+
+// ── Main Mistakes screen ──────────────────────────────────────────────────────
 
 export default function Mistakes() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('pending')
+  // refreshKey forces useMemo to re-compute after status changes
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  // Get current user
   const userId = userTrackingService.getLoggedInUserId()
 
-  // Get mistakes for current tab
+  // Mistakes for active tab — sorted most-recent-first
   const allMistakes = useMemo(() => {
     if (!userId) return []
-    return userTrackingService.getMistakes(userId, activeTab) || []
-  }, [userId, activeTab])
+    const raw = userTrackingService.getMistakes(userId, activeTab) || []
+    return [...raw].sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0
+      return tb - ta
+    })
+  }, [userId, activeTab, refreshKey])
 
-  const handleStatusChange = (mistakeId, newStatus) => {
+  // Counts across all 3 statuses (for summary strip + tab badges)
+  const counts = useMemo(() => {
+    if (!userId) return { pending: 0, revised: 0, mastered: 0 }
+    return {
+      pending:  (userTrackingService.getMistakes(userId, 'pending')  || []).length,
+      revised:  (userTrackingService.getMistakes(userId, 'revised')  || []).length,
+      mastered: (userTrackingService.getMistakes(userId, 'mastered') || []).length,
+    }
+  }, [userId, refreshKey])
+
+  // Weakest topic/subtopic from attempt analytics
+  const weakestTopic = useMemo(() => {
+    if (!userId) return null
+    const weak = userTrackingService.getWeakTopics(userId, 1)
+    return weak.length > 0 ? weak[0] : null
+  }, [userId, refreshKey])
+
+  // Group active tab mistakes by date bucket
+  const grouped = useMemo(() => bucketByDate(allMistakes), [allMistakes])
+
+  function handleStatusChange(mistakeId, newStatus) {
     if (!userId) return
     userTrackingService.updateMistakeStatus(userId, mistakeId, newStatus)
-    // Re-fetch will happen on next render due to dependency
-    setActiveTab(activeTab) // Trigger re-render
+    setRefreshKey(k => k + 1)
   }
 
-  // Empty state
+  // ── Not logged in ──────────────────────────────────────────────────────────
   if (!userId) {
     return (
       <main className="flex-1 safe-pb overflow-y-auto">
@@ -240,17 +335,42 @@ export default function Mistakes() {
     )
   }
 
+  const emptyState = EMPTY_STATES[activeTab] || EMPTY_STATES.pending
+
   return (
     <main className="flex-1 safe-pb overflow-y-auto">
       <div className="max-w-lg mx-auto px-4">
 
         {/* Header */}
-        <div className="pt-5 pb-4">
+        <div className="pt-5 pb-3">
           <h1 className="font-display font-bold text-2xl text-on">Your Mistakes</h1>
           <p className="text-sm text-on-variant mt-0.5">Revise wrong answers and fix weak areas.</p>
         </div>
 
-        {/* Retry All CTA — only on Pending tab when mistakes exist */}
+        {/* Summary strip */}
+        <div className="bg-surface-container border border-outline-variant rounded-xl p-3 mb-4">
+          <div className="flex items-center gap-3 flex-wrap mb-1.5">
+            <span className="text-xs text-on-dim">
+              Pending: <span className="font-semibold text-error">{counts.pending}</span>
+            </span>
+            <span className="text-outline-variant text-xs">·</span>
+            <span className="text-xs text-on-dim">
+              Revised: <span className="font-semibold text-warn">{counts.revised}</span>
+            </span>
+            <span className="text-outline-variant text-xs">·</span>
+            <span className="text-xs text-on-dim">
+              Mastered: <span className="font-semibold text-success">{counts.mastered}</span>
+            </span>
+          </div>
+          {weakestTopic && weakestTopic.subtopic && weakestTopic.subtopic !== 'Unknown' && (
+            <p className="text-xs text-on-dim">
+              Weakest: <span className="text-warn font-medium">{weakestTopic.subtopic}</span>
+              <span className="text-on-dim"> ({weakestTopic.accuracy}% accuracy)</span>
+            </p>
+          )}
+        </div>
+
+        {/* Retry All — only on Pending when mistakes exist */}
         {activeTab === 'pending' && allMistakes.length > 0 && (
           <button
             onClick={() => navigate('/practice?mode=revision')}
@@ -275,35 +395,29 @@ export default function Mistakes() {
             >
               <Icon name={tab.icon} size={14} />
               {tab.label}
+              {counts[tab.key] > 0 && (
+                <span className={`text-2xs font-bold tabular-nums ${activeTab === tab.key ? 'text-white/80' : 'text-on-dim'}`}>
+                  {counts[tab.key]}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
-        {/* Mistake cards or empty state */}
+        {/* Cards — grouped by date, or empty state */}
         {allMistakes.length === 0 ? (
           <EmptyState
-            icon={activeTab === 'pending' ? 'check_circle' : 'celebration'}
-            title={
-              activeTab === 'pending'
-                ? 'No pending mistakes'
-                : activeTab === 'revised'
-                ? 'No revised mistakes'
-                : 'No mastered mistakes yet'
-            }
-            subtitle="No mistakes yet. Start practice to build your improvement map."
+            icon={emptyState.icon}
+            title={emptyState.title}
+            subtitle={emptyState.subtitle}
             ctaLabel="Start Practice"
             onCta={() => navigate('/')}
           />
         ) : (
           <div className="mb-6">
-            <p className="text-xs text-on-dim mb-3">{allMistakes.length} item{allMistakes.length !== 1 ? 's' : ''}</p>
-            {allMistakes.map(mistake => (
-              <MistakeCard
-                key={mistake.id}
-                mistake={mistake}
-                onStatusChange={handleStatusChange}
-              />
-            ))}
+            <DateGroup label="Today"     mistakes={grouped.today}     onStatusChange={handleStatusChange} navigate={navigate} />
+            <DateGroup label="Yesterday" mistakes={grouped.yesterday} onStatusChange={handleStatusChange} navigate={navigate} />
+            <DateGroup label="Earlier"   mistakes={grouped.earlier}   onStatusChange={handleStatusChange} navigate={navigate} />
           </div>
         )}
 
